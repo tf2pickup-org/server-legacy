@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import passport from 'passport';
 import jwt from 'passport-jwt';
-import { Player } from '../player/models/player';
+import { Player } from '../players/models/player';
 
 passport.use(new jwt.Strategy({
   secretOrKey: 'secret',

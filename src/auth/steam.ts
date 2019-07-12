@@ -4,7 +4,7 @@ import passport from 'passport';
 import steam from 'passport-steam';
 import { fetchEtf2lPlayerInfo } from '../etf2l';
 import logger from '../logger';
-import { IPlayer, Player } from '../player/models/player';
+import { IPlayer, Player } from '../players/models/player';
 import { SteamProfile } from '../profile/models/steam-profile';
 
 passport.use(new steam.Strategy({
