@@ -11,7 +11,7 @@ router
     if (Types.ObjectId.isValid(id)) {
       const player = await Player.findById(id);
       if (player) {
-        return res.status(200).send(player);
+        return res.status(200).send(player.toJSON());
       } else {
         return res.status(404).send({ message: 'no such player' });
       }

@@ -9,5 +9,5 @@ export const queue: Queue = {
       { name: 'medic', count: 1 },
     ],
   },
-  players: [ ],
+  players: [],
 };

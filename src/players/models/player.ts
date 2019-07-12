@@ -1,4 +1,5 @@
 import { Document, model, Schema } from 'mongoose';
+import { renameId } from '../../utils';
 
 export interface IPlayer extends Document {
   steamId: string;
@@ -10,6 +11,8 @@ export const PlayerSchema: Schema = new Schema({
   steamId: { type: String, required: true },
   name: { type: String, unique: true, trim: true, required: true },
   joinedAt: Date,
+}, {
+  toJSON: { versionKey: false, transform: renameId },
 });
 
 PlayerSchema.pre('save', function(next) {
