@@ -27,8 +27,12 @@ passport.use(new steam.Strategy({
     player = await new Player({
       steamId: profile.id,
       name,
+      avatarUrl: profile.photos[0].value,
     }).save();
     logger.info(`new user: ${name} (steamId: ${profile.id})`);
+  } else {
+    player.avatarUrl = profile.photos[0].value;
+    await player.save();
   }
 
   return done(null, player);

@@ -5,17 +5,19 @@ export interface IPlayer extends Document {
   steamId: string;
   name: string;
   joinedAt: Date;
+  avatarUrl: string;
 }
 
-export const PlayerSchema: Schema = new Schema({
+const playerSchema: Schema = new Schema({
   steamId: { type: String, required: true },
   name: { type: String, unique: true, trim: true, required: true },
   joinedAt: Date,
+  avatarUrl: { type: String },
 }, {
   toJSON: { versionKey: false, transform: renameId },
 });
 
-PlayerSchema.pre('save', function(next) {
+playerSchema.pre('save', function(next) {
   const self = this as IPlayer;
   if (!self.joinedAt) {
     self.joinedAt = new Date();
@@ -24,5 +26,5 @@ PlayerSchema.pre('save', function(next) {
   next();
 });
 
-const Player = model<IPlayer>('Player', PlayerSchema);
-export { Player };
+const playerDb = model<IPlayer>('Player', playerSchema);
+export { playerDb as Player };
