@@ -3,9 +3,9 @@ import cors from 'cors';
 import express from 'express';
 import { createServer, Server } from 'http';
 import passport from 'passport';
-import socketio from 'socket.io';
 import { setupAuth } from './auth';
 import { connectToTheDatabase } from './database';
+import { setupIo } from './io';
 import logger from './logger';
 import { Routes } from './routes';
 
@@ -13,7 +13,6 @@ class App {
   public app: express.Application;
   private routes: Routes = new Routes();
   private server: Server;
-  private io: SocketIO.Server;
 
   constructor() {
     connectToTheDatabase();
@@ -36,9 +35,7 @@ class App {
     setupAuth(this.app);
 
     this.server = createServer(this.app);
-    this.io = socketio(this.server);
-
-    this.io.on('connection', () => logger.debug('connection'));
+    setupIo(this.server);
   }
 
 }
