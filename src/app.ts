@@ -13,6 +13,11 @@ class App {
   public app: express.Application;
   private routes: Routes = new Routes();
   private server: Server;
+  private _io: SocketIO.Server;
+
+  get io() {
+    return this._io;
+  }
 
   constructor() {
     connectToTheDatabase();
@@ -35,9 +40,9 @@ class App {
     setupAuth(this.app);
 
     this.server = createServer(this.app);
-    setupIo(this.server);
+    this._io = setupIo(this.server);
   }
 
 }
 
-export default new App();
+export const app = new App();

@@ -1,7 +1,6 @@
-import { io } from '../io';
 import { leaveQueue } from './queue';
 
-export function handleWsEvents() {
+export function handleWsEvents(io: SocketIO.Server) {
   io.on('connection', socket => {
     if (socket.request.user.logged_in) {
       socket.on('disconnect', () => {

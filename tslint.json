@@ -9,7 +9,14 @@
     "no-console": [false],
     "quotemark": [true, "single"],
     "arrow-parens": [false],
-    "object-literal-sort-keys": false
+    "object-literal-sort-keys": false,
+    "variable-name": {
+      "options": [
+        "ban-keywords",
+        "check-format",
+        "allow-leading-underscore"
+      ]
+    }
   },
   "rulesDirectory": []
 }

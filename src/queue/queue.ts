@@ -1,4 +1,4 @@
-import { io } from '../io';
+import { app } from '../app';
 import logger from '../logger';
 import { QueueConfig } from './models/queue-config';
 import { QueueSlot } from './models/queue-slot';
@@ -36,12 +36,12 @@ export function joinQueue(slotId: number, playerId: string) {
   queueSlots.forEach(s => {
     if (s.playerId === playerId) {
       delete s.playerId;
-      io.emit('queue slot update', s);
+      app.io.emit('queue slot update', s);
     }
   });
 
   slot.playerId = playerId;
-  io.emit('queue slot update', slot);
+  app.io.emit('queue slot update', slot);
   logger.debug(`${playerId} joined the queue`);
 }
 
@@ -49,7 +49,7 @@ export function leaveQueue(playerId: string) {
   const slot = queueSlots.find(s => s.playerId === playerId);
   if (slot) {
     delete slot.playerId;
-    io.emit('queue slot update', slot);
+    app.io.emit('queue slot update', slot);
     logger.debug(`${playerId} left the queue`);
   }
 }

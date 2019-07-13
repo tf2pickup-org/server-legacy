@@ -5,16 +5,13 @@ import logger from './logger';
 import { Player } from './players/models/player';
 import { handleQueueWsEvents } from './queue';
 
-export let io: SocketIO.Server;
-
-export function setupIo(server: Server) {
-  io = socketio(server);
+export function setupIo(server: Server): SocketIO.Server {
+  const io = socketio(server);
 
   io.use(authenticate({
     secret: 'secret',
     succeedWithoutToken: true,
-  }, async (payload: { id: any }, done) => {
-    logger.debug(JSON.stringify(payload));
+  }, async (payload: { id?: any }, done) => {
     if (payload && payload.id) {
       try {
         const player = await Player.findOne({ _id: payload.id });
@@ -39,5 +36,8 @@ export function setupIo(server: Server) {
       logger.debug('WS connection (anonymous)');
     }
   });
-  handleQueueWsEvents();
+
+  handleQueueWsEvents(io);
+
+  return io;
 }
