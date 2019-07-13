@@ -16,8 +16,13 @@ passport.use(new steam.Strategy({
   let player = await Player.findOne({ steamId: profile.id });
 
   if (!player) {
-    const etf2l = await fetchEtf2lPlayerInfo(profile.id);
-    const name = etf2l.name || profile.displayName;
+    let name: string;
+    try {
+      const etf2l = await fetchEtf2lPlayerInfo(profile.id);
+      name = etf2l.name;
+    } catch (error) {
+      name = profile.displayName;
+    }
 
     player = await new Player({
       steamId: profile.id,
