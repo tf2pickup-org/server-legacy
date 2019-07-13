@@ -1,23 +1,26 @@
 import { Router } from 'express';
 import { ensureAuthenticated } from '../auth';
-import { joinQueue, leaveQueue, queue } from './queue';
+import { joinQueue, leaveQueue, queueConfig, queueSlots } from './queue';
 
 const router = Router();
 
 router
   .route('/')
-  .get((req, res) => res.status(200).send(queue));
+  .get((req, res) => res.status(200).send({
+    config: queueConfig,
+    slots: queueSlots,
+  }));
 
 router
-  .route('/players')
-  .get((req, res) => res.status(200).send(queue.players))
+  .route('/slots')
+  .get((req, res) => res.status(200).send(queueSlots))
   .post(ensureAuthenticated, (req, res) => {
     const playerId = req.user.id;
-    const slot = req.body.slot;
+    const slotId = req.body.slot_id;
 
     try {
-      joinQueue(slot, playerId);
-      return res.status(200).send(queue.players);
+      joinQueue(slotId, playerId);
+      return res.status(200).send(queueSlots);
     } catch (error) {
       return res.status(400).send({ message: error.message });
     }
@@ -25,7 +28,7 @@ router
   .delete(ensureAuthenticated, (req, res) => {
     const playerId = req.user.id;
     leaveQueue(playerId);
-    return res.status(200).send(queue.players);
+    return res.status(200).send(queueSlots);
   });
 
 export default router;

@@ -1,38 +1,49 @@
 import logger from '../logger';
-import { Queue } from './models/queue';
+import { QueueConfig } from './models/queue-config';
+import { QueueSlot } from './models/queue-slot';
 
-export const queue: Queue = {
-  config: {
-    classes: [
-      { name: 'scout', count: 2 },
-      { name: 'soldier', count: 2 },
-      { name: 'demoman', count: 1 },
-      { name: 'medic', count: 1 },
-    ],
-  },
-  players: [],
+export const queueConfig: QueueConfig = {
+  teamCount: 2,
+  classes: [
+    { name: 'scout', count: 2 },
+    { name: 'soldier', count: 2 },
+    { name: 'demoman', count: 1 },
+    { name: 'medic', count: 1 },
+  ],
 };
 
-export function joinQueue(slot: string, playerId: string) {
+export let queueSlots: QueueSlot[] = [];
+
+export function resetQueue() {
+  let lastId = 0;
+  queueSlots = queueConfig.classes.reduce((prev, curr) => {
+    const tmpSlots = [];
+    for (let i = 0; i < curr.count * queueConfig.teamCount; ++i) {
+      tmpSlots.push({ id: lastId++, gameClass: curr.name });
+    }
+
+    return prev.concat(tmpSlots);
+  }, []);
+}
+
+export function joinQueue(slotId: number, playerId: string) {
+  const slot = queueSlots.find(s => s.id === slotId);
   if (!slot) {
-    throw new Error('slot undefined');
+    throw new Error('no such slot');
   }
 
-  const gameClass = queue.config.classes.find(cls => cls.name === slot);
-  if (!gameClass) {
-    throw new Error('invalid slot');
-  }
+  queueSlots.forEach(s => {
+    if (s.playerId === playerId) {
+      delete s.playerId;
+    }
+  });
 
-  const takenSlotsCount = queue.players.filter(p => p.slot === slot).length;
-  if (takenSlotsCount >= gameClass.count) {
-    throw new Error('slot unavailable');
-  }
-
-  queue.players = [ ...queue.players.filter(p => p.playerId !== playerId), { slot, playerId } ];
-  logger.debug(`${playerId} joined the queue as ${slot}`);
+  slot.playerId = playerId;
+  logger.debug(`${playerId} joined the queue`);
 }
 
 export function leaveQueue(playerId: string) {
-  queue.players = [ ...queue.players.filter(p => p.playerId !== playerId) ];
+  const slot = queueSlots.find(s => s.playerId === playerId);
+  delete slot.playerId;
   logger.debug(`${playerId} left the queue`);
 }
