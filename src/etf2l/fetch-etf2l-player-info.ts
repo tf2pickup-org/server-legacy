@@ -15,9 +15,7 @@ interface Etf2lPlayerResponse {
 export async function fetchEtf2lPlayerInfo(steamId: string) {
   try {
     const response = await rp(`${ETF2L_API_ENDPOINT}/player/${steamId}`, { json: true }) as Etf2lPlayerResponse;
-    if (response.status.code === 200) {
-      return response.player;
-    }
+    return response.status.code === 200 ? response.player : null;
   } catch (error) {
     logger.error(`could not fetch ETF2L player info for steamId ${steamId}: ${error.message}`);
   }

@@ -1,0 +1,8 @@
+{
+  "production": false,
+  "url": "http://localhost:3000",
+  "steam": {
+    "apiKey": "your-steam-api-key"
+  },
+  "clientUrl": "localhost:4200"
+}

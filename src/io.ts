@@ -1,6 +1,7 @@
 import { Server } from 'http';
 import socketio from 'socket.io';
 import { authenticate } from 'socketio-jwt-auth';
+import { jwtConfig } from './auth/jwt';
 import logger from './logger';
 import { Player } from './players/models/player';
 import { handleQueueWsEvents } from './queue';
@@ -9,7 +10,7 @@ export function setupIo(server: Server): SocketIO.Server {
   const io = socketio(server);
 
   io.use(authenticate({
-    secret: 'secret',
+    secret: jwtConfig.secret,
     succeedWithoutToken: true,
   }, async (payload: { id?: any }, done) => {
     if (payload && payload.id) {
