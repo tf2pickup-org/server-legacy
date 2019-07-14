@@ -37,11 +37,11 @@ gameSchema.pre('save', async function(next) {
     self.launchedAt = new Date();
   }
 
-  const latestGame = await gameDb.findOne({}, {}, { sort: { launchedAt: 1 }});
+  const latestGame = await gameDb.findOne({}, {}, { sort: { launchedAt: -1 }});
   if (latestGame) {
     self.number = latestGame.number + 1;
   } else {
-    self.number = 0;
+    self.number = 1;
   }
 
   next();

@@ -7,7 +7,7 @@ const router = Router();
 router
   .route('/')
   .get(async (req, res) => {
-    const games = await Game.find();
+    const games = await Game.find().sort({ launchedAt: -1 });
     return res.status(200).send(games.map(g => g.toJSON()));
   });
 
