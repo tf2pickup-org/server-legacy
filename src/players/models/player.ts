@@ -9,10 +9,10 @@ export interface IPlayer extends Document {
 }
 
 const playerSchema: Schema = new Schema({
-  steamId: { type: String, required: true },
-  name: { type: String, unique: true, trim: true, required: true },
-  joinedAt: Date,
-  avatarUrl: { type: String },
+  steamId: { type: Schema.Types.String, required: true },
+  name: { type: Schema.Types.String, unique: true, trim: true, required: true },
+  joinedAt: Schema.Types.Date,
+  avatarUrl: { type: Schema.Types.String },
 }, {
   toJSON: { versionKey: false, transform: renameId },
 });

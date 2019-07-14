@@ -1,5 +1,7 @@
 import { Inject } from 'typescript-ioc';
+import { createGame } from '../game';
 import { IoProvider } from '../io-provider';
+import logger from '../logger';
 import { QueueConfig } from './models/queue-config';
 import { QueueSlot } from './models/queue-slot';
 import { QueueState } from './models/queue-state';
@@ -243,8 +245,10 @@ class Queue {
     }
   }
 
-  private launch() {
-    this.timer = setTimeout(() => this.reset(), 10 * 1000);
+  private async launch() {
+    const game = await createGame(this.config, this.slots);
+    logger.info(`game ${game.id} created`);
+    setTimeout(() => this.reset(), 0);
   }
 
 }
