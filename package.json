@@ -30,6 +30,7 @@
     "request-promise": "^4.2.4",
     "socket.io": "^2.2.0",
     "socketio-jwt-auth": "^0.1.0",
+    "typescript-ioc": "^1.2.5",
     "winston": "^3.2.1"
   },
   "devDependencies": {

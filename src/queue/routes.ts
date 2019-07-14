@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { ensureAuthenticated } from '../auth';
 import { queue } from './queue';
 
 const router = Router();

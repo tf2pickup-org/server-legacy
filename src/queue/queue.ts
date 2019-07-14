@@ -1,4 +1,5 @@
-import { app } from '../app';
+import { Inject } from 'typescript-ioc';
+import { IoProvider } from '../io-provider';
 import { QueueConfig } from './models/queue-config';
 import { QueueSlot } from './models/queue-slot';
 import { QueueState } from './models/queue-state';
@@ -26,6 +27,7 @@ class Queue {
   public slots: QueueSlot[] = [];
   public state: QueueState = 'waiting';
   private timer: NodeJS.Timeout;
+  @Inject private ioProvider: IoProvider;
 
   get requiredPlayerCount() {
     return this.config.classes.reduce((prev, curr) => prev + curr.count, 0) * this.config.teamCount;
@@ -41,47 +43,7 @@ class Queue {
 
   constructor() {
     this.resetSlots();
-  }
-
-  public setupIo(io: SocketIO.Server) {
-    io.on('connection', socket => {
-      if (socket.request.user.logged_in) {
-        const player = socket.request.user;
-
-        socket.on('disconnect', () => {
-          try {
-            queue.leave(player.id);
-          } catch (error) { }
-        });
-
-        socket.on('join queue', (slotId: number, done) => {
-          try {
-            const slot = this.join(slotId, player.id, socket);
-            done({ slot });
-          } catch (error) {
-            done({ error: error.message });
-          }
-        });
-
-        socket.on('leave queue', done => {
-          try {
-            const slot = this.leave(player.id, socket);
-            done({ slot });
-          } catch (error) {
-            done({ error: error.message });
-          }
-        });
-
-        socket.on('player ready', done => {
-          try {
-            const slot = this.ready(player.id, socket);
-            done({ slot });
-          } catch (error) {
-            done({ error: error.message });
-          }
-        });
-      }
-    });
+    this.setupIo();
   }
 
   /**
@@ -89,7 +51,7 @@ class Queue {
    */
   public reset() {
     this.resetSlots();
-    app.io.emit('queue slots reset', this.slots);
+    this.ioProvider.io.emit('queue slots reset', this.slots);
     this.updateState();
   }
 
@@ -174,6 +136,47 @@ class Queue {
     }, []);
   }
 
+  private setupIo() {
+    this.ioProvider.io.on('connection', socket => {
+      if (socket.request.user.logged_in) {
+        const player = socket.request.user;
+
+        socket.on('disconnect', () => {
+          try {
+            queue.leave(player.id);
+          } catch (error) { }
+        });
+
+        socket.on('join queue', (slotId: number, done) => {
+          try {
+            const slot = this.join(slotId, player.id, socket);
+            done({ slot });
+          } catch (error) {
+            done({ error: error.message });
+          }
+        });
+
+        socket.on('leave queue', done => {
+          try {
+            const slot = this.leave(player.id, socket);
+            done({ slot });
+          } catch (error) {
+            done({ error: error.message });
+          }
+        });
+
+        socket.on('player ready', done => {
+          try {
+            const slot = this.ready(player.id, socket);
+            done({ slot });
+          } catch (error) {
+            done({ error: error.message });
+          }
+        });
+      }
+    });
+  }
+
   private updateState() {
     switch (this.state) {
       case 'waiting':
@@ -202,7 +205,7 @@ class Queue {
   private setState(state: QueueState) {
     if (state !== this.state) {
       this.state = state;
-      app.io.emit('queue state update', state);
+      this.ioProvider.io.emit('queue state update', state);
     }
   }
 
@@ -211,7 +214,7 @@ class Queue {
       // broadcast event to everyone except the sender
       sender.broadcast.emit('queue slot update', slot);
     } else {
-      app.io.emit('queue slot update', slot);
+      this.ioProvider.io.emit('queue slot update', slot);
     }
   }
 
