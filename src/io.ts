@@ -4,7 +4,7 @@ import { authenticate } from 'socketio-jwt-auth';
 import { jwtConfig } from './auth/jwt';
 import logger from './logger';
 import { Player } from './players/models/player';
-import { handleQueueWsEvents } from './queue';
+import { queue } from './queue';
 
 export function setupIo(server: Server): SocketIO.Server {
   const io = socketio(server);
@@ -38,7 +38,6 @@ export function setupIo(server: Server): SocketIO.Server {
     }
   });
 
-  handleQueueWsEvents(io);
-
+  queue.setupIo(io);
   return io;
 }

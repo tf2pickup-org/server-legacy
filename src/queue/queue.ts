@@ -39,6 +39,28 @@ class Queue {
     this.resetSlots();
   }
 
+  public setupIo(io: SocketIO.Server) {
+    io.on('connection', socket => {
+      if (socket.request.user.logged_in) {
+        const player = socket.request.user;
+
+        socket.on('disconnect', () => {
+          queue.leave(player.id);
+        });
+
+        socket.on('join queue', (slotId: number, done) => {
+          const slot = this.join(slotId, player.id, socket);
+          done(slot);
+        });
+
+        socket.on('leave queue', done => {
+          const slot = this.leave(player.id, socket);
+          done(slot);
+        });
+      }
+    });
+  }
+
   /**
    * Clears all slots, resets the queue to default state.
    */
@@ -52,7 +74,7 @@ class Queue {
    * @param slotId The slot to be taken.
    * @param playerId The player to take the slot.
    */
-  public join(slotId: number, playerId: string) {
+  public join(slotId: number, playerId: string, sender?: SocketIO.Socket): QueueSlot {
     const slot = this.slots.find(s => s.id === slotId);
     if (!slot) {
       throw new Error('no such slot');
@@ -66,23 +88,27 @@ class Queue {
     });
 
     slot.playerId = playerId;
-    app.io.emit('queue slot update', slot);
+    this.slotUpdated(slot, sender);
     logger.debug(`${playerId} joined the queue`);
 
-    this.updateState();
+    setTimeout(() => this.updateState(), 0);
+    return slot;
   }
 
   /**
    * Player leaves the queue.
    * @param playerId The player to leave.
    */
-  public leave(playerId: string) {
+  public leave(playerId: string, sender?: SocketIO.Socket): QueueSlot {
     const slot = this.slots.find(s => s.playerId === playerId);
     if (slot) {
       delete slot.playerId;
-      app.io.emit('queue slot update', slot);
+      this.slotUpdated(slot, sender);
       logger.debug(`${playerId} left the queue`);
-      this.updateState();
+      setTimeout(() => this.updateState(), 0);
+      return slot;
+    } else {
+      return null;
     }
   }
 
@@ -110,6 +136,15 @@ class Queue {
     if (state !== this.state) {
       this.state = state;
       app.io.emit('queue state update', state);
+    }
+  }
+
+  private slotUpdated(slot: QueueSlot, sender?: SocketIO.Socket) {
+    if (sender) {
+      // broadcast event to everyone except the sender
+      sender.broadcast.emit('queue slot update', slot);
+    } else {
+      app.io.emit('queue slot update', slot);
     }
   }
 

@@ -14,28 +14,7 @@ router
 
 router
   .route('/slots')
-  .get((req, res) => res.status(200).send(queue.slots))
-  .put(ensureAuthenticated, (req, res) => {
-    const playerId = req.user.id;
-    const action = req.body.action;
-
-    switch (action) {
-      case 'join': {
-        const slotId = req.body.slot_id;
-        try {
-          queue.join(slotId, playerId);
-          return res.status(200).send(queue.slots);
-        } catch (error) {
-          return res.status(400).send({ message: error.message });
-        }
-      }
-
-      case 'leave': {
-        queue.leave(playerId);
-        return res.status(200).send(queue.slots);
-      }
-    }
-  });
+  .get((req, res) => res.status(200).send(queue.slots));
 
 router
   .route('/state')
