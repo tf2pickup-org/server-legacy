@@ -25,6 +25,7 @@ class Queue {
   public config: QueueConfig = configTest;
   public slots: QueueSlot[] = [];
   public state: QueueState = 'waiting';
+  private timer: NodeJS.Timeout;
 
   get requiredPlayerCount() {
     return this.config.classes.reduce((prev, curr) => prev + curr.count, 0) * this.config.teamCount;
@@ -32,6 +33,10 @@ class Queue {
 
   get playerCount() {
     return this.slots.reduce((prev, curr) => curr.playerId ? prev + 1 : prev, 0);
+  }
+
+  get readyPlayerCount() {
+    return this.slots.reduce((prev, curr) => curr.playerReady ? prev + 1 : prev, 0);
   }
 
   constructor() {
@@ -84,6 +89,7 @@ class Queue {
    */
   public reset() {
     this.resetSlots();
+    app.io.emit('queue slots reset', this.slots);
     this.updateState();
   }
 
@@ -106,7 +112,7 @@ class Queue {
       if (s.playerId === playerId) {
         delete s.playerId;
         s.playerReady = false;
-        app.io.emit('queue slot update', s);
+        this.slotUpdated(s);
       }
     });
 
@@ -127,12 +133,11 @@ class Queue {
   public leave(playerId: string, sender?: SocketIO.Socket): QueueSlot {
     const slot = this.slots.find(s => s.playerId === playerId);
     if (slot) {
-      if (this.state === 'ready' && slot.playerReady) {
+      if (this.state !== 'waiting' && slot.playerReady) {
         throw new Error('cannot unready when already readied up');
       }
 
       delete slot.playerId;
-      slot.playerReady = false;
       this.slotUpdated(slot, sender);
       setTimeout(() => this.updateState(), 0);
       return slot;
@@ -174,13 +179,22 @@ class Queue {
       case 'waiting':
         if (this.playerCount === this.requiredPlayerCount) {
           this.setState('ready');
+          this.timer = setTimeout(() => this.readyUpTimeout(), 60 * 1000);
         }
         break;
 
       case 'ready':
         if (this.playerCount === 0) {
           this.setState('waiting');
+        } else if (this.readyPlayerCount === this.requiredPlayerCount) {
+          delete this.timer;
+          this.setState('launching');
+          this.launch();
         }
+        break;
+
+      case 'launching':
+        this.setState('waiting');
         break;
     }
   }
@@ -199,6 +213,23 @@ class Queue {
     } else {
       app.io.emit('queue slot update', slot);
     }
+  }
+
+  private readyUpTimeout() {
+    if (this.readyPlayerCount === this.requiredPlayerCount) {
+      this.setState('launching');
+    } else {
+      this.slots.forEach(s => {
+        s.playerReady = false;
+        this.slotUpdated(s);
+      });
+
+      this.setState('waiting');
+    }
+  }
+
+  private launch() {
+    this.timer = setTimeout(() => this.reset(), 10 * 1000);
   }
 
 }
