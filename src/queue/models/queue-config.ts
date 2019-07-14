@@ -1,6 +1,6 @@
 import { GameClass } from './game-class';
 
 export interface QueueConfig {
-  teamCount: number;
+  teamCount: 2;
   classes: GameClass[];
 }

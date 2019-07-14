@@ -15,7 +15,7 @@ const config6v6: QueueConfig = {
 };
 
 const configTest: QueueConfig = {
-  teamCount: 1,
+  teamCount: 2,
   classes: [
     { name: 'soldier', count: 1 },
   ],
@@ -49,13 +49,21 @@ class Queue {
         });
 
         socket.on('join queue', (slotId: number, done) => {
-          const slot = this.join(slotId, player.id, socket);
-          done(slot);
+          try {
+            const slot = this.join(slotId, player.id, socket);
+            done({ slot });
+          } catch (error) {
+            done({ error: error.message });
+          }
         });
 
         socket.on('leave queue', done => {
-          const slot = this.leave(player.id, socket);
-          done(slot);
+          try {
+            const slot = this.leave(player.id, socket);
+            done({ slot });
+          } catch (error) {
+            done({ error: error.message });
+          }
         });
       }
     });
@@ -78,6 +86,10 @@ class Queue {
     const slot = this.slots.find(s => s.id === slotId);
     if (!slot) {
       throw new Error('no such slot');
+    }
+
+    if (slot.playerId) {
+      throw new Error('slot already taken');
     }
 
     this.slots.forEach(s => {
