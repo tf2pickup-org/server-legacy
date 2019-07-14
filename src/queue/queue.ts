@@ -1,5 +1,5 @@
 import { Inject } from 'typescript-ioc';
-import { createGame } from '../game';
+import { createGame } from '../games';
 import { IoProvider } from '../io-provider';
 import logger from '../logger';
 import { QueueConfig } from './models/queue-config';

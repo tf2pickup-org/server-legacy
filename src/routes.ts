@@ -1,6 +1,6 @@
 import express from 'express';
 import { Singleton } from 'typescript-ioc';
-import { routes as games } from './game';
+import { routes as games } from './games';
 import { routes as players } from './players';
 import { routes as profile } from './profile';
 import { routes as queue } from './queue';

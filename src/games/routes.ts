@@ -5,6 +5,13 @@ import { Game } from './models/game';
 const router = Router();
 
 router
+  .route('/')
+  .get(async (req, res) => {
+    const games = await Game.find();
+    return res.status(200).send(games.map(g => g.toJSON()));
+  });
+
+router
   .route('/:gameId')
   .get(async (req, res) => {
     const id = req.params.gameId;
