@@ -12,6 +12,7 @@ const config6v6: QueueConfig = {
     { name: 'demoman', count: 1 },
     { name: 'medic', count: 1 },
   ],
+  readyUpTimeout: 60 * 1000, // 1 minute
 };
 
 const configTest: QueueConfig = {
@@ -19,6 +20,7 @@ const configTest: QueueConfig = {
   classes: [
     { name: 'soldier', count: 1 },
   ],
+  readyUpTimeout: 10 * 1000, // 10 seconds
 };
 
 class Queue {
@@ -182,7 +184,6 @@ class Queue {
       case 'waiting':
         if (this.playerCount === this.requiredPlayerCount) {
           this.setState('ready');
-          this.timer = setTimeout(() => this.readyUpTimeout(), 60 * 1000);
         }
         break;
 
@@ -190,9 +191,7 @@ class Queue {
         if (this.playerCount === 0) {
           this.setState('waiting');
         } else if (this.readyPlayerCount === this.requiredPlayerCount) {
-          delete this.timer;
           this.setState('launching');
-          this.launch();
         }
         break;
 
@@ -204,9 +203,22 @@ class Queue {
 
   private setState(state: QueueState) {
     if (state !== this.state) {
+      this.onStateChange(this.state, state);
       this.state = state;
-      this.ioProvider.io.emit('queue state update', state);
     }
+  }
+
+  private onStateChange(oldState: QueueState, newState: QueueState) {
+    if (oldState === 'waiting' && newState === 'ready') {
+      this.timer = setTimeout(() => this.readyUpTimeout(), this.config.readyUpTimeout);
+    } else if (oldState === 'ready' && newState === 'launching') {
+      delete this.timer;
+      this.launch();
+    } else if (oldState === 'launching' && newState === 'waiting') {
+      delete this.timer;
+    }
+
+    this.ioProvider.io.emit('queue state update', newState);
   }
 
   private slotUpdated(slot: QueueSlot, sender?: SocketIO.Socket) {
