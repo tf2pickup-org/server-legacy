@@ -16,7 +16,11 @@
         "check-format",
         "allow-leading-underscore"
       ]
-    }
+    },
+    "no-empty": [
+      true,
+      "allow-empty-catch"
+    ]
   },
   "rulesDirectory": []
 }

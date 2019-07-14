@@ -1,5 +1,4 @@
 import { app } from '../app';
-import logger from '../logger';
 import { QueueConfig } from './models/queue-config';
 import { QueueSlot } from './models/queue-slot';
 import { QueueState } from './models/queue-state';
@@ -45,7 +44,9 @@ class Queue {
         const player = socket.request.user;
 
         socket.on('disconnect', () => {
-          queue.leave(player.id);
+          try {
+            queue.leave(player.id);
+          } catch (error) { }
         });
 
         socket.on('join queue', (slotId: number, done) => {
@@ -60,6 +61,15 @@ class Queue {
         socket.on('leave queue', done => {
           try {
             const slot = this.leave(player.id, socket);
+            done({ slot });
+          } catch (error) {
+            done({ error: error.message });
+          }
+        });
+
+        socket.on('player ready', done => {
+          try {
+            const slot = this.ready(player.id, socket);
             done({ slot });
           } catch (error) {
             done({ error: error.message });
@@ -95,14 +105,17 @@ class Queue {
     this.slots.forEach(s => {
       if (s.playerId === playerId) {
         delete s.playerId;
+        s.playerReady = false;
         app.io.emit('queue slot update', s);
       }
     });
 
     slot.playerId = playerId;
-    this.slotUpdated(slot, sender);
-    logger.debug(`${playerId} joined the queue`);
+    if (this.state === 'ready') {
+      slot.playerReady = true;
+    }
 
+    this.slotUpdated(slot, sender);
     setTimeout(() => this.updateState(), 0);
     return slot;
   }
@@ -114,13 +127,33 @@ class Queue {
   public leave(playerId: string, sender?: SocketIO.Socket): QueueSlot {
     const slot = this.slots.find(s => s.playerId === playerId);
     if (slot) {
+      if (this.state === 'ready' && slot.playerReady) {
+        throw new Error('cannot unready when already readied up');
+      }
+
       delete slot.playerId;
+      slot.playerReady = false;
       this.slotUpdated(slot, sender);
-      logger.debug(`${playerId} left the queue`);
       setTimeout(() => this.updateState(), 0);
       return slot;
     } else {
       return null;
+    }
+  }
+
+  public ready(playerId: string, sender?: SocketIO.Socket): QueueSlot {
+    if (this.state !== 'ready') {
+      throw new Error('queue not ready');
+    }
+
+    const slot = this.slots.find(s => s.playerId === playerId);
+    if (slot) {
+      slot.playerReady = true;
+      this.slotUpdated(slot, sender);
+      setTimeout(() => this.updateState(), 0);
+      return slot;
+    } else {
+      throw new Error('player is not in the queue');
     }
   }
 
@@ -129,7 +162,7 @@ class Queue {
     this.slots = this.config.classes.reduce((prev, curr) => {
       const tmpSlots = [];
       for (let i = 0; i < curr.count * this.config.teamCount; ++i) {
-        tmpSlots.push({ id: lastId++, gameClass: curr.name });
+        tmpSlots.push({ id: lastId++, gameClass: curr.name, playerReady: false });
       }
 
       return prev.concat(tmpSlots);
@@ -137,10 +170,18 @@ class Queue {
   }
 
   private updateState() {
-    if (this.playerCount === this.requiredPlayerCount) {
-      this.setState('ready');
-    } else {
-      this.setState('waiting');
+    switch (this.state) {
+      case 'waiting':
+        if (this.playerCount === this.requiredPlayerCount) {
+          this.setState('ready');
+        }
+        break;
+
+      case 'ready':
+        if (this.playerCount === 0) {
+          this.setState('waiting');
+        }
+        break;
     }
   }
 
