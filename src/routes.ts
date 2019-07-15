@@ -1,5 +1,6 @@
 import express from 'express';
 import { Singleton } from 'typescript-ioc';
+import { routes as gameServers } from './game-servers';
 import { routes as games } from './games';
 import { routes as players } from './players';
 import { routes as profile } from './profile';
@@ -12,5 +13,6 @@ export class Routes {
     app.use('/queue', queue);
     app.use('/players', players);
     app.use('/games', games);
+    app.use('/game-servers', gameServers);
   }
 }
