@@ -8,9 +8,9 @@ import { GamePlayer } from './models/game-player';
 class GameController {
   @Inject private ioProvider: IoProvider;
 
-  public async create(config: QueueConfig, slots: QueueSlot[]): Promise<IGame> {
+  public async create(config: QueueConfig, queueSlots: QueueSlot[]): Promise<IGame> {
     let team = 0;
-    const players: GamePlayer[] = slots.map(s => ({
+    const slots: GamePlayer[] = queueSlots.map(s => ({
       playerId: s.playerId,
       gameClass: s.gameClass,
       teamId: `${team++ % 2}`,
@@ -23,7 +23,8 @@ class GameController {
         0: 'RED',
         1: 'BLU',
       },
-      players,
+      slots,
+      players: queueSlots.map(s => s.playerId),
     });
 
     await game.save();
@@ -32,8 +33,7 @@ class GameController {
   }
 
   public async activeGameForPlayer(playerId: string): Promise<IGame> {
-    const games = await Game.find({ state: /launching|started/ });
-    return games.find(g => g.players.find(p => p.playerId === playerId));
+    return await Game.findOne({ state: /launching|started/, players: playerId });
   }
 }
 

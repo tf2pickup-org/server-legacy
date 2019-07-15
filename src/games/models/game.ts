@@ -7,7 +7,8 @@ export interface IGame extends Document {
   launchedAt: Date;
   number: number;
   teams: { [teamId: string]: string };
-  players: GamePlayer[];
+  players: string[];
+  slots: GamePlayer[];
   map: string;
   logsUrl?: string;
   demoUrl?: string;
@@ -22,7 +23,8 @@ const gameSchema: Schema = new Schema({
     of: Schema.Types.String,
     required: true,
   },
-  players: { type: [Schema.Types.Mixed], required: true },
+  players: { type: [Schema.Types.ObjectId], required: true },
+  slots: { type: [Schema.Types.Mixed], required: true },
   map: { type: Schema.Types.String, required: true },
   logsUrl: Schema.Types.String,
   demoUrl: Schema.Types.String,
