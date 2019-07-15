@@ -4,5 +4,6 @@
   "steam": {
     "apiKey": "your-steam-api-key"
   },
-  "clientUrl": "localhost:4200"
+  "clientUrl": "localhost:4200",
+  "superUser": "your-steam-id"
 }

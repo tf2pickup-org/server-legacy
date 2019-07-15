@@ -1,11 +1,13 @@
 import { Document, model, Schema } from 'mongoose';
 import { renameId } from '../../utils';
+import { PlayerRole } from './player-role';
 
 export interface IPlayer extends Document {
   steamId: string;
   name: string;
   joinedAt: Date;
   avatarUrl: string;
+  role: PlayerRole;
 }
 
 const playerSchema: Schema = new Schema({
@@ -13,6 +15,7 @@ const playerSchema: Schema = new Schema({
   name: { type: Schema.Types.String, unique: true, trim: true, required: true },
   joinedAt: Schema.Types.Date,
   avatarUrl: { type: Schema.Types.String },
+  role: Schema.Types.String,
 }, {
   toJSON: { versionKey: false, transform: renameId },
 });

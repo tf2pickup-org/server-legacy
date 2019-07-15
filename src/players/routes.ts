@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { Types } from 'mongoose';
+import { ensureAuthenticated, ensureRole } from '../auth';
 import { Game } from '../games/models/game';
 import { Player } from './models/player';
 
@@ -24,6 +25,23 @@ router
     } else {
       res.status(400).send({ message: 'invalid id' });
     }
+  })
+  .put(ensureAuthenticated, ensureRole('super-user'), async (req, res) => {
+    const id = req.params.playerId;
+    if (!Types.ObjectId.isValid(id)) {
+      return res.status(400).send({ message: 'invalid id' });
+    }
+
+    const editedPlayer = req.body;
+    if (!editedPlayer) {
+      return res.status(400).send({ message: 'invalid body' });
+    }
+
+    const player = await Player.findById(id);
+    player.name = editedPlayer.name;
+    await player.save();
+
+    return res.status(200).send(player.toJSON());
   });
 
 router

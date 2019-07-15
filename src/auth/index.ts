@@ -6,3 +6,4 @@ export function setupAuth(app: Application) {
 }
 
 export { ensureAuthenticated } from './jwt';
+export { ensureRole } from './ensure-role';
