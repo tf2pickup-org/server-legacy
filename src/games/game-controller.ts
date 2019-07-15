@@ -30,6 +30,11 @@ class GameController {
     this.ioProvider.io.emit('game created', game);
     return game;
   }
+
+  public async activeGameForPlayer(playerId: string): Promise<IGame> {
+    const games = await Game.find({ state: /launching|started/ });
+    return games.find(g => g.players.find(p => p.playerId === playerId));
+  }
 }
 
 export const gameController = new GameController();

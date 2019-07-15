@@ -64,7 +64,11 @@ class Queue {
    * @param slotId The slot to be taken.
    * @param playerId The player to take the slot.
    */
-  public join(slotId: number, playerId: string, sender?: SocketIO.Socket): QueueSlot {
+  public async join(slotId: number, playerId: string, sender?: SocketIO.Socket): Promise<QueueSlot> {
+    if (!!(await gameController.activeGameForPlayer(playerId))) {
+      throw new Error('player involved in a currently active game');
+    }
+
     const slot = this.slots.find(s => s.id === slotId);
     if (!slot) {
       throw new Error('no such slot');
@@ -151,9 +155,9 @@ class Queue {
           } catch (error) { }
         });
 
-        socket.on('join queue', (slotId: number, done) => {
+        socket.on('join queue', async (slotId: number, done) => {
           try {
-            const slot = this.join(slotId, player.id, socket);
+            const slot = await this.join(slotId, player.id, socket);
             done({ slot });
           } catch (error) {
             done({ error: error.message });
