@@ -222,6 +222,8 @@ class Queue {
       this.launch();
     } else if (oldState === 'launching' && newState === 'waiting') {
       delete this.timer;
+    } else if (oldState === 'ready' && newState === 'waiting') {
+      this.cleanupQueue();
     }
 
     this.ioProvider.io.emit('queue state update', newState);
@@ -240,13 +242,19 @@ class Queue {
     if (this.readyPlayerCount === this.requiredPlayerCount) {
       this.setState('launching');
     } else {
-      this.slots.forEach(s => {
-        s.playerReady = false;
-        this.slotUpdated(s);
-      });
-
       this.setState('waiting');
     }
+  }
+
+  private cleanupQueue() {
+    this.slots.forEach(s => {
+      if (!s.playerReady) {
+        delete s.playerId;
+      } else {
+        s.playerReady = false;
+      }
+      this.slotUpdated(s);
+    });
   }
 
   private async launch() {
