@@ -12,7 +12,7 @@ router
     if (Types.ObjectId.isValid(id)) {
       const player = await Player.findById(id);
       if (player) {
-        const gameCount = await Game.find({ players: id }).count();
+        const gameCount = await Game.find({ players: id }).countDocuments();
         return res.status(200).send(
           {
             ...player.toJSON(),
