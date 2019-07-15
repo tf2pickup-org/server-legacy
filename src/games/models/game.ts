@@ -26,7 +26,7 @@ const gameSchema: Schema = new Schema({
   map: { type: Schema.Types.String, required: true },
   logsUrl: Schema.Types.String,
   demoUrl: Schema.Types.String,
-  gameState: Schema.Types.String,
+  state: { type: Schema.Types.String, required: true },
 }, {
   toJSON: { versionKey: false, transform: renameId },
 });
