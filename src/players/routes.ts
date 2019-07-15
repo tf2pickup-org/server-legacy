@@ -31,7 +31,7 @@ router
   .get(async (req, res) => {
     const id = req.params.playerId;
     if (Types.ObjectId.isValid(id)) {
-      const games = await Game.find({ players: id });
+      const games = await Game.find({ players: id }).sort({ launchedAt: -1 });
       return res.status(200).send(games.map(g => g.toJSON()));
     } else {
       res.status(400).send({ message: 'invalid player id' });

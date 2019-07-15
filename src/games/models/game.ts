@@ -10,9 +10,10 @@ export interface IGame extends Document {
   players: string[];
   slots: GamePlayer[];
   map: string;
+  state: GameState;
+  connectString: string;
   logsUrl?: string;
   demoUrl?: string;
-  state: GameState;
 }
 
 const gameSchema: Schema = new Schema({
@@ -26,9 +27,10 @@ const gameSchema: Schema = new Schema({
   players: { type: [Schema.Types.ObjectId], required: true },
   slots: { type: [Schema.Types.Mixed], required: true },
   map: { type: Schema.Types.String, required: true },
+  state: { type: Schema.Types.String, required: true },
+  connectString: { type: Schema.Types.String },
   logsUrl: Schema.Types.String,
   demoUrl: Schema.Types.String,
-  state: { type: Schema.Types.String, required: true },
 }, {
   toJSON: { versionKey: false, transform: renameId },
 });
@@ -39,11 +41,13 @@ gameSchema.pre('save', async function(next) {
     self.launchedAt = new Date();
   }
 
-  const latestGame = await gameDb.findOne({}, {}, { sort: { launchedAt: -1 }});
-  if (latestGame) {
-    self.number = latestGame.number + 1;
-  } else {
-    self.number = 1;
+  if (!self.number) {
+    const latestGame = await gameDb.findOne({}, {}, { sort: { launchedAt: -1 }});
+    if (latestGame) {
+      self.number = latestGame.number + 1;
+    } else {
+      self.number = 1;
+    }
   }
 
   next();

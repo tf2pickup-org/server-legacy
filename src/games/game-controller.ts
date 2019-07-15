@@ -29,11 +29,41 @@ class GameController {
 
     await game.save();
     this.ioProvider.io.emit('game created', game);
+
+    setTimeout(() => this.updateConnectString(game.id, 'connect melkor.tf:27016; password amarenka_mniam'), 30 * 1000);
+    setTimeout(() => this.onGameStarted(game.id), 60 * 1000);
+    setTimeout(() => this.onGameEnded(game.id), 120 * 1000);
+
     return game;
   }
 
   public async activeGameForPlayer(playerId: string): Promise<IGame> {
     return await Game.findOne({ state: /launching|started/, players: playerId });
+  }
+
+  private async updateConnectString(gameId: string, connectString: string) {
+    const game = await Game.findById(gameId);
+    game.connectString = connectString;
+    game.save();
+
+    this.ioProvider.io.emit('game updated', game);
+  }
+
+  private async onGameStarted(gameId: string) {
+    const game = await Game.findById(gameId);
+    game.state = 'started';
+    game.save();
+
+    this.ioProvider.io.emit('game updated', game);
+  }
+
+  private async onGameEnded(gameId: string) {
+    const game = await Game.findById(gameId);
+    game.state = 'ended';
+    game.connectString = null;
+    game.save();
+
+    this.ioProvider.io.emit('game updated', game);
   }
 }
 
