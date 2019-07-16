@@ -6,30 +6,13 @@ import logger from '../logger';
 import { GameServer, IGameServer } from './models/game-server';
 import { GameServerAssignment } from './models/game-server-assignment';
 import { ServerInfoForPlayer } from './models/server-info-for-player';
+import { verifyServer } from './verify-server';
 
 class GameServerController {
 
   public async addGameServer(gameServer: IGameServer): Promise<IGameServer> {
-    if (await this.serverOnline(gameServer)) {
-      const ret = await new GameServer(gameServer).save();
-      return ret;
-    } else {
-      throw Error('server unreachable');
-    }
-  }
-
-  public async serverOnline(options: { address: string, port: number, rconPassword: string }): Promise<boolean> {
-    try {
-      const rcon = await Rcon.connect({
-        host: options.address,
-        port: options.port,
-        password: options.rconPassword,
-      });
-      await rcon.end();
-      return true;
-    } catch (error) {
-      return false;
-    }
+    await verifyServer(gameServer);
+    return await new GameServer(gameServer).save();
   }
 
   public async findFirstFreeGameServer(): Promise<IGameServer> {
