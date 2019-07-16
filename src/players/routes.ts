@@ -34,7 +34,7 @@ router
 
     const editedPlayer = req.body;
     if (!editedPlayer) {
-      return res.status(400).send({ message: 'invalid body' });
+      return res.status(400).send({ message: 'invalid player' });
     }
 
     const player = await Player.findById(id);
