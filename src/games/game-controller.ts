@@ -1,4 +1,6 @@
 import { Inject } from 'typescript-ioc';
+import { gameServerController } from '../game-servers/game-server-controller';
+import { IGameServer } from '../game-servers/models/game-server';
 import { IoProvider } from '../io-provider';
 import { QueueConfig } from '../queue/models/queue-config';
 import { QueueSlot } from '../queue/models/queue-slot';
@@ -8,7 +10,7 @@ import { GamePlayer } from './models/game-player';
 class GameController {
   @Inject private ioProvider: IoProvider;
 
-  public async create(config: QueueConfig, queueSlots: QueueSlot[]): Promise<IGame> {
+  public async create(config: QueueConfig, queueSlots: QueueSlot[], map: string): Promise<IGame> {
     let team = 0;
     const slots: GamePlayer[] = queueSlots.map(s => ({
       playerId: s.playerId,
@@ -17,7 +19,7 @@ class GameController {
     }));
 
     const game = new Game({
-      map: 'cp_badlands',
+      map,
       state: 'launching',
       teams: {
         0: 'RED',
@@ -30,11 +32,16 @@ class GameController {
     await game.save();
     this.ioProvider.io.emit('game created', game);
 
-    setTimeout(() => this.updateConnectString(game.id, 'connect melkor.tf:27016; password amarenka_mniam'), 30 * 1000);
+    // setTimeout(() => this.updateConnectString(game.id, 'connect melkor.tf:27016; password amarenka_mniam'), 30 * 1000);
     setTimeout(() => this.onGameStarted(game.id), 60 * 1000);
     setTimeout(() => this.onGameEnded(game.id), 120 * 1000);
 
     return game;
+  }
+
+  public async launch(game: IGame, server: IGameServer) {
+    const infoForPlayer = await gameServerController.configure(server, game);
+    this.updateConnectString(game.id, infoForPlayer.connectString);
   }
 
   public async activeGameForPlayer(playerId: string): Promise<IGame> {

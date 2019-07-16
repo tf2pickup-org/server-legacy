@@ -1,4 +1,5 @@
 import { Inject } from 'typescript-ioc';
+import { gameServerController } from '../game-servers/game-server-controller';
 import { gameController } from '../games';
 import { IoProvider } from '../io-provider';
 import logger from '../logger';
@@ -263,8 +264,18 @@ class Queue {
   }
 
   private async launch() {
-    const game = await gameController.create(this.config, this.slots);
+    const game = await gameController.create(this.config, this.slots, this.map);
     logger.info(`game ${game.id} created`);
+
+    const server = await gameServerController.findFirstFreeGameServer();
+    if (server) {
+      await gameServerController.assignGame(server, game);
+      logger.info(`game ${game.id} will be played on ${server.name}`);
+      await gameController.launch(game, server);
+    } else {
+      logger.error('no servers available!');
+    }
+
     setTimeout(() => this.reset(), 0);
   }
 
