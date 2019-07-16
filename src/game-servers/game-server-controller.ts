@@ -1,5 +1,6 @@
 import generator from 'generate-password';
 import { Rcon } from 'rcon-client';
+import { config } from '../config';
 import { IGame } from '../games/models/game';
 import logger from '../logger';
 import { GameServer, IGameServer } from './models/game-server';
@@ -51,7 +52,7 @@ class GameServerController {
   }
 
   public async configure(server: IGameServer, game: IGame): Promise<ServerInfoForPlayer> {
-    logger.info(`rconing to ${server.name}...`);
+    logger.info(`configuring server ${server.name}...`);
 
     const rcon = new Rcon({ packetResponseTimeout: 5000 });
     await rcon.connect({
@@ -60,16 +61,20 @@ class GameServerController {
       password: server.rconPassword,
     });
 
-    const password = generator.generate({ length: 10, numbers: true, uppercase: true });
+    const logAddress = `${config.log_relay.address}:${config.log_relay.port}`;
+    logger.debug(`server ${server.name}: adding log address ${logAddress}...`);
+    await rcon.send(`logaddress_add ${logAddress}`);
 
-    logger.info(`server ${server.name}: kicking all players...`);
+    logger.debug(`server ${server.name}: kicking all players...`);
     await rcon.send(`kickall`);
-    logger.info(`server ${server.name}: changing map to ${game.map}...`);
+    logger.debug(`server ${server.name}: changing map to ${game.map}...`);
     await rcon.send(`changelevel ${game.map}`);
-    logger.info(`server ${server.name}: settings password to ${password}...`);
+
+    const password = generator.generate({ length: 10, numbers: true, uppercase: true });
+    logger.debug(`server ${server.name}: settings password to ${password}...`);
     await rcon.send(`sv_password ${password}`);
     await rcon.end();
-    logger.info(`done with configuring ${server.name}`);
+    logger.info(`done with configuring server ${server.name}`);
 
     return {
       connectString: `connect ${server.address}:${server.port}; password ${password}`,

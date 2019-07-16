@@ -10,7 +10,7 @@ import { GamePlayer } from './models/game-player';
 class GameController {
   @Inject private ioProvider: IoProvider;
 
-  public async create(config: QueueConfig, queueSlots: QueueSlot[], map: string): Promise<IGame> {
+  public async create(queueSlots: QueueSlot[], map: string): Promise<IGame> {
     let team = 0;
     const slots: GamePlayer[] = queueSlots.map(s => ({
       playerId: s.playerId,
@@ -32,7 +32,6 @@ class GameController {
     await game.save();
     this.ioProvider.io.emit('game created', game);
 
-    // setTimeout(() => this.updateConnectString(game.id, 'connect melkor.tf:27016; password amarenka_mniam'), 30 * 1000);
     setTimeout(() => this.onGameStarted(game.id), 60 * 1000);
     setTimeout(() => this.onGameEnded(game.id), 120 * 1000);
 
