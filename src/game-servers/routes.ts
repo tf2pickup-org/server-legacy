@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { Document } from 'mongoose';
 import { ensureAuthenticated, ensureRole } from '../auth';
 import { renameId } from '../utils';
+import { gameServerController } from './game-server-controller';
 import { GameServer, IGameServer } from './models/game-server';
 
 const router = Router();
@@ -26,8 +27,12 @@ router
       return res.status(400).send({ message: 'invalid game server' });
     }
 
-    const ret = await new GameServer(gameServer).save();
-    return res.status(201).send(ret.toJSON());
+    try {
+      const ret = await gameServerController.addGameServer(gameServer);
+      return res.status(201).send(ret.toJSON());
+    } catch (error) {
+      return res.status(400).send({ message: error.message });
+    }
   });
 
 export default router;
