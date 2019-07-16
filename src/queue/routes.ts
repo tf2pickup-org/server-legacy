@@ -9,6 +9,7 @@ router
     config: queue.config,
     state: queue.state,
     slots: queue.slots,
+    map: queue.map,
   }));
 
 router

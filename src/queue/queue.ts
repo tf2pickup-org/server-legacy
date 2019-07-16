@@ -15,6 +15,7 @@ const config6v6: QueueConfig = {
     { name: 'medic', count: 1 },
   ],
   readyUpTimeout: 60 * 1000, // 1 minute
+  maps: [ 'cp_process_final', 'cp_snakewater_final1', 'cp_sunshine' ],
 };
 
 const configTest: QueueConfig = {
@@ -23,6 +24,7 @@ const configTest: QueueConfig = {
     { name: 'soldier', count: 1 },
   ],
   readyUpTimeout: 10 * 1000, // 10 seconds
+  maps: [ 'cp_process_final', 'cp_snakewater_final1', 'cp_sunshine' ],
 };
 
 class Queue {
@@ -30,6 +32,7 @@ class Queue {
   public config: QueueConfig = configTest;
   public slots: QueueSlot[] = [];
   public state: QueueState = 'waiting';
+  public map: string;
   private timer: NodeJS.Timeout;
   @Inject private ioProvider: IoProvider;
 
@@ -46,7 +49,7 @@ class Queue {
   }
 
   constructor() {
-    this.resetSlots();
+    this.reset();
     this.setupIo();
   }
 
@@ -56,6 +59,8 @@ class Queue {
   public reset() {
     this.resetSlots();
     this.ioProvider.io.emit('queue slots reset', this.slots);
+    this.randomizeMap();
+    this.ioProvider.io.emit('queue map updated', this.map);
     this.updateState();
   }
 
@@ -261,6 +266,10 @@ class Queue {
     const game = await gameController.create(this.config, this.slots);
     logger.info(`game ${game.id} created`);
     setTimeout(() => this.reset(), 0);
+  }
+
+  private randomizeMap() {
+    this.map = this.config.maps[Math.floor(Math.random() * this.config.maps.length)];
   }
 
 }
