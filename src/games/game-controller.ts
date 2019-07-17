@@ -2,13 +2,17 @@ import { Inject } from 'typescript-ioc';
 import { gameServerController } from '../game-servers/game-server-controller';
 import { IGameServer } from '../game-servers/models/game-server';
 import { IoProvider } from '../io-provider';
-import { QueueConfig } from '../queue/models/queue-config';
 import { QueueSlot } from '../queue/models/queue-slot';
 import { Game, IGame } from './models/game';
 import { GamePlayer } from './models/game-player';
+import { PlayerRole } from 'players/models/player-role';
 
 class GameController {
   @Inject private ioProvider: IoProvider;
+
+  constructor() {
+    this.setupIo();
+  }
 
   public async create(queueSlots: QueueSlot[], map: string): Promise<IGame> {
     let team = 0;
@@ -47,6 +51,25 @@ class GameController {
     return await Game.findOne({ state: /launching|started/, players: playerId });
   }
 
+  public async interruptGame(gameId: string, error?: string, interrupter?: SocketIO.Socket): Promise<IGame> {
+    const game = await Game.findById(gameId);
+    game.state = 'interrputed';
+
+    if (error) {
+      game.error = error;
+    }
+
+    game.save();
+
+    if (interrupter) {
+      interrupter.broadcast.emit('game updated', game.toJSON());
+    } else {
+      this.ioProvider.io.emit('game updated', game.toJSON());
+    }
+
+    return game;
+  }
+
   private async updateConnectString(gameId: string, connectString: string) {
     const game = await Game.findById(gameId);
     game.connectString = connectString;
@@ -70,6 +93,25 @@ class GameController {
     game.save();
 
     this.ioProvider.io.emit('game updated', game);
+  }
+
+  private setupIo() {
+    this.ioProvider.io.on('connection', socket => {
+      if (socket.request.user.logged_in) {
+        const player = socket.request.user;
+        const role = player.role as PlayerRole;
+        if (role === 'admin' || role === 'super-user') {
+          socket.on('force end game', async (gameId: string, done) => {
+            try {
+              const game = await this.interruptGame(gameId, 'ended by admin', socket);
+              done({ game: game.toJSON() });
+            } catch (error) {
+              done({ error: error.message });
+            }
+          });
+        }
+      }
+    });
   }
 }
 

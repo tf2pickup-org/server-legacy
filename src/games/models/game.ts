@@ -14,6 +14,7 @@ export interface IGame extends Document {
   connectString: string;
   logsUrl?: string;
   demoUrl?: string;
+  error?: string;
 }
 
 const gameSchema: Schema = new Schema({
@@ -31,6 +32,7 @@ const gameSchema: Schema = new Schema({
   connectString: { type: Schema.Types.String },
   logsUrl: Schema.Types.String,
   demoUrl: Schema.Types.String,
+  error: Schema.Types.String,
 }, {
   toJSON: { versionKey: false, transform: renameId },
 });

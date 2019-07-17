@@ -84,6 +84,7 @@ class Queue {
       throw new Error('slot already taken');
     }
 
+    // remove player from any slot he could be occupying
     this.slots.forEach(s => {
       if (s.playerId === playerId) {
         delete s.playerId;
@@ -109,7 +110,7 @@ class Queue {
   public leave(playerId: string, sender?: SocketIO.Socket): QueueSlot {
     const slot = this.slots.find(s => s.playerId === playerId);
     if (slot) {
-      if (this.state !== 'waiting' && slot.playerReady) {
+      if (slot.playerReady && (this.state === 'ready' || this.state === 'launching')) {
         throw new Error('cannot unready when already readied up');
       }
 
@@ -217,6 +218,7 @@ class Queue {
     if (state !== this.state) {
       this.onStateChange(this.state, state);
       this.state = state;
+      this.ioProvider.io.emit('queue state update', state);
     }
   }
 
@@ -231,8 +233,6 @@ class Queue {
     } else if (oldState === 'ready' && newState === 'waiting') {
       this.cleanupQueue();
     }
-
-    this.ioProvider.io.emit('queue state update', newState);
   }
 
   private slotUpdated(slot: QueueSlot, sender?: SocketIO.Socket) {
@@ -274,6 +274,7 @@ class Queue {
       await gameController.launch(game, server);
     } else {
       logger.error('no servers available!');
+      await gameController.interruptGame(game.id, 'no servers available');
     }
 
     setTimeout(() => this.reset(), 0);

@@ -25,9 +25,16 @@ class GameServerController {
         .find({ $or: [{ 'game.state': 'started' }, { 'game.state': 'launching' }]});
 
       if (games.length === 0) {
-        return gs;
+        try {
+          await verifyServer(gs);
+          return gs;
+        } catch (error) {
+          continue;
+        }
       }
     }
+
+    return null;
   }
 
   public async assignGame(server: IGameServer, game: IGame) {
