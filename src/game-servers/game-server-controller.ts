@@ -3,12 +3,18 @@ import { Rcon } from 'rcon-client';
 import { config } from '../config';
 import { IGame } from '../games/models/game';
 import logger from '../logger';
+import { isServerOnline } from './is-server-online';
 import { GameServer, IGameServer } from './models/game-server';
 import { GameServerAssignment } from './models/game-server-assignment';
 import { ServerInfoForPlayer } from './models/server-info-for-player';
 import { verifyServer } from './verify-server';
 
 class GameServerController {
+
+  constructor() {
+    // check all servers every 30 seconds
+    setInterval(() => this.checkAllServers(), 30 * 1000);
+  }
 
   public async addGameServer(gameServer: IGameServer): Promise<IGameServer> {
     await verifyServer(gameServer);
@@ -69,6 +75,15 @@ class GameServerController {
     return {
       connectString: `connect ${server.address}:${server.port}; password ${password}`,
     };
+  }
+
+  private async checkAllServers() {
+    const allGameServers = await GameServer.find();
+    for (const server of allGameServers) {
+      const isOnline = await isServerOnline(server.address, server.port);
+      server.isOnline = isOnline;
+      await server.save();
+    }
   }
 
 }

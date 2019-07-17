@@ -2,10 +2,10 @@ import { Inject } from 'typescript-ioc';
 import { gameServerController } from '../game-servers/game-server-controller';
 import { IGameServer } from '../game-servers/models/game-server';
 import { IoProvider } from '../io-provider';
+import { PlayerRole } from '../players/models/player-role';
 import { QueueSlot } from '../queue/models/queue-slot';
 import { Game, IGame } from './models/game';
 import { GamePlayer } from './models/game-player';
-import { PlayerRole } from 'players/models/player-role';
 
 class GameController {
   @Inject private ioProvider: IoProvider;

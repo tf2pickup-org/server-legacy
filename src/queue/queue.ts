@@ -30,7 +30,7 @@ const configTest: QueueConfig = {
 
 class Queue {
 
-  public config: QueueConfig = configTest;
+  public config: QueueConfig = config6v6;
   public slots: QueueSlot[] = [];
   public state: QueueState = 'waiting';
   public map: string;
