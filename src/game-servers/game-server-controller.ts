@@ -3,6 +3,7 @@ import { Rcon } from 'rcon-client';
 import { config } from '../config';
 import { IGame } from '../games/models/game';
 import logger from '../logger';
+import { GameEventListener } from './game-event-listener';
 import { isServerOnline } from './is-server-online';
 import { GameServer, IGameServer } from './models/game-server';
 import { GameServerAssignment } from './models/game-server-assignment';
@@ -10,6 +11,8 @@ import { ServerInfoForPlayer } from './models/server-info-for-player';
 import { verifyServer } from './verify-server';
 
 class GameServerController {
+
+  private gameEventListener = new GameEventListener();
 
   constructor() {
     // check all servers every 30 seconds
