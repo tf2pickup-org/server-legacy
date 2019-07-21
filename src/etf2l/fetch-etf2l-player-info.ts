@@ -18,5 +18,6 @@ export async function fetchEtf2lPlayerInfo(steamId: string) {
     return response.status.code === 200 ? response.player : null;
   } catch (error) {
     logger.error(`could not fetch ETF2L player info for steamId ${steamId}: ${error.message}`);
+    throw error;
   }
 }

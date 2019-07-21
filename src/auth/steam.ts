@@ -1,4 +1,5 @@
-import { Application, Request, Response } from 'express';
+import { Etf2lPlayer } from 'etf2l/etf2l-player';
+import { Application } from 'express';
 import { sign } from 'jsonwebtoken';
 import passport from 'passport';
 import steam from 'passport-steam';
@@ -16,21 +17,20 @@ passport.use(new steam.Strategy({
   let player = await Player.findOne({ steamId: profile.id });
 
   if (!player) {
-    let name: string;
+    let etf2lProfile: Etf2lPlayer;
     try {
-      const etf2l = await fetchEtf2lPlayerInfo(profile.id);
-      name = etf2l.name;
+      etf2lProfile = await fetchEtf2lPlayerInfo(profile.id);
     } catch (error) {
-      name = profile.displayName;
+      return done('no etf2l profile', null);
     }
 
     player = await new Player({
       steamId: profile.id,
-      name,
+      name: etf2lProfile.name,
       avatarUrl: profile.photos[0].value,
       role: config.superUser === profile.id ? 'super-user' : null,
     }).save();
-    logger.info(`new user: ${name} (steamId: ${profile.id})`);
+    logger.info(`new user: ${etf2lProfile.name} (steamId: ${profile.id})`);
   } else {
     player.avatarUrl = profile.photos[0].value;
     await player.save();
@@ -39,20 +39,21 @@ passport.use(new steam.Strategy({
   return done(null, player);
 }));
 
-function handleSteamAuth(req: Request, res: Response) {
-  if (!req.user) {
-    return res.sendStatus(401);
-  }
-
-  const user = req.user as IPlayer;
-  const token = sign({ id: user._id }, 'secret', { expiresIn: '1h' });
-  return res.redirect(`${config.clientUrl}?token=${token}`);
-}
-
 export function setupSteamAuth(theApp: Application) {
   theApp.get('/auth/steam', passport.authenticate('steam', { session: false }));
 
-  theApp.get('/auth/steam/return',
-    passport.authenticate('steam', { session: false }),
-    handleSteamAuth);
+  theApp.get('/auth/steam/return', (req, res, next) => {
+    passport.authenticate('steam', (error, user) => {
+      if (error) {
+        return res.redirect(`${config.clientUrl}/auth-error?error=${error}`);
+      }
+
+      if (!user) {
+        return res.sendStatus(401);
+      }
+
+      const token = sign({ id: user._id }, 'secret', { expiresIn: '1h' });
+      return res.redirect(`${config.clientUrl}?token=${token}`);
+    })(req, res, next);
+  });
 }
