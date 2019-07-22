@@ -1,9 +1,10 @@
 import generator from 'generate-password';
 import { Rcon } from 'rcon-client';
 import { config } from '../config';
+import { gameController } from '../games';
 import { IGame } from '../games/models/game';
 import logger from '../logger';
-import { GameEventListener } from './game-event-listener';
+import { GameEventListener, GameEventSource } from './game-event-listener';
 import { isServerOnline } from './is-server-online';
 import { GameServer, IGameServer } from './models/game-server';
 import { GameServerAssignment } from './models/game-server-assignment';
@@ -17,6 +18,20 @@ class GameServerController {
   constructor() {
     // check all servers every 30 seconds
     setInterval(() => this.checkAllServers(), 30 * 1000);
+
+    this.gameEventListener.on('match start', async ({ source }) => {
+      const game = await this.getGame(source);
+      if (game) {
+        gameController.onMatchStarted(game);
+      }
+    });
+
+    this.gameEventListener.on('match end', async ({ source }) => {
+      const game = await this.getGame(source);
+      if (game) {
+        gameController.onMatchEnded(game);
+      }
+    });
   }
 
   public async addGameServer(gameServer: IGameServer): Promise<IGameServer> {
@@ -86,6 +101,22 @@ class GameServerController {
       const isOnline = await isServerOnline(server.address, server.port);
       server.isOnline = isOnline;
       await server.save();
+    }
+  }
+
+  private async getGame(source: GameEventSource): Promise<IGame | null> {
+    const server = await GameServer.findOne(source);
+    if (server) {
+      const assignment = await GameServerAssignment.findOne({ server });
+      if (assignment) {
+        return assignment.game;
+      } else {
+        logger.error(`no game assigned for server ${server.name}`);
+        return null;
+      }
+    } else {
+      logger.error(`no such server: ${source.address}:${source.port}`);
+      return null;
     }
   }
 
