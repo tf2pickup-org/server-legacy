@@ -4,6 +4,7 @@ import { gameServerController } from '../game-servers/game-server-controller';
 import { gameController } from '../games';
 import { IoProvider } from '../io-provider';
 import logger from '../logger';
+import { Player } from '../players/models/player';
 import { QueueConfig } from './models/queue-config';
 import { QueueSlot } from './models/queue-slot';
 import { QueueState } from './models/queue-state';
@@ -53,6 +54,11 @@ class Queue {
    * @param playerId The player to take the slot.
    */
   public async join(slotId: number, playerId: string, sender?: SocketIO.Socket): Promise<QueueSlot> {
+    const player = await Player.findById(playerId);
+    if (!player) {
+      throw new Error('no such player');
+    }
+
     if (!!(await gameController.activeGameForPlayer(playerId))) {
       throw new Error('player involved in a currently active game');
     }
@@ -80,6 +86,7 @@ class Queue {
       slot.playerReady = true;
     }
 
+    logger.info(`player "${player.name}" joined the queue at slot id=${slot.id} (game class: ${slot.gameClass})`);
     this.slotUpdated(slot, sender);
     setTimeout(() => this.updateState(), 0);
     return slot;
@@ -97,6 +104,7 @@ class Queue {
       }
 
       delete slot.playerId;
+      logger.info(`slot ${slot.id} freed`);
       this.slotUpdated(slot, sender);
       setTimeout(() => this.updateState(), 0);
       return slot;
@@ -105,14 +113,16 @@ class Queue {
     }
   }
 
-  public ready(playerId: string, sender?: SocketIO.Socket): QueueSlot {
+  public async ready(playerId: string, sender?: SocketIO.Socket): Promise<QueueSlot> {
     if (this.state !== 'ready') {
       throw new Error('queue not ready');
     }
 
     const slot = this.slots.find(s => s.playerId === playerId);
     if (slot) {
+      const player = await Player.findById(playerId);
       slot.playerReady = true;
+      logger.info(`player "${player.name}" ready`);
       this.slotUpdated(slot, sender);
       setTimeout(() => this.updateState(), 0);
       return slot;
@@ -162,9 +172,9 @@ class Queue {
           }
         });
 
-        socket.on('player ready', done => {
+        socket.on('player ready', async done => {
           try {
-            const slot = this.ready(player.id, socket);
+            const slot = await this.ready(player.id, socket);
             done({ slot });
           } catch (error) {
             done({ error: error.message });
@@ -198,6 +208,7 @@ class Queue {
 
   private setState(state: QueueState) {
     if (state !== this.state) {
+      logger.info(`queue state change (${this.state} => ${state})`);
       this.onStateChange(this.state, state);
       this.state = state;
       this.ioProvider.io.emit('queue state update', state);
@@ -253,7 +264,7 @@ class Queue {
     if (server) {
       await gameServerController.assignGame(server, game);
       logger.info(`game ${game.id} will be played on ${server.name}`);
-      await gameController.launch(game, server);
+      await gameController.launch(this.config, game, server);
     } else {
       logger.error('no servers available!');
       await gameController.interruptGame(game.id, 'no servers available');

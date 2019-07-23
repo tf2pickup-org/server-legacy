@@ -4,6 +4,7 @@ import { config } from '../config';
 import { gameController } from '../games';
 import { IGame } from '../games/models/game';
 import logger from '../logger';
+import { QueueConfig } from '../queue/models/queue-config';
 import { GameEventListener, GameEventSource } from './game-event-listener';
 import { isServerOnline } from './is-server-online';
 import { GameServer, IGameServer } from './models/game-server';
@@ -65,9 +66,10 @@ class GameServerController {
     await new GameServerAssignment({ server, game }).save();
   }
 
-  public async configure(server: IGameServer, game: IGame): Promise<ServerInfoForPlayer> {
+  public async configure(queueConfig: QueueConfig, server: IGameServer, game: IGame): Promise<ServerInfoForPlayer> {
     logger.info(`configuring server ${server.name}...`);
 
+    logger.debug(`using password ${server.rconPassword} for game server ${server.address}:${server.port}`);
     const rcon = new Rcon({ packetResponseTimeout: 5000 });
     await rcon.connect({
       host: server.address,
@@ -84,14 +86,22 @@ class GameServerController {
     logger.debug(`server ${server.name}: changing map to ${game.map}...`);
     await rcon.send(`changelevel ${game.map}`);
 
+    for (const execConfig of queueConfig.execConfigs) {
+      logger.debug(`server ${server.name}: executing ${execConfig}...`);
+      await rcon.send(`exec ${execConfig}`);
+    }
+
     const password = generator.generate({ length: 10, numbers: true, uppercase: true });
     logger.debug(`server ${server.name}: settings password to ${password}...`);
     await rcon.send(`sv_password ${password}`);
     await rcon.end();
     logger.info(`done with configuring server ${server.name}`);
 
+    const connectString = `connect ${server.address}:${server.port}; password ${password}`;
+    logger.info(`${server.name} connect: ${connectString}`);
+
     return {
-      connectString: `connect ${server.address}:${server.port}; password ${password}`,
+      connectString,
     };
   }
 

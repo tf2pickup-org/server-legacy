@@ -3,6 +3,7 @@ import { gameServerController } from '../game-servers/game-server-controller';
 import { IGameServer } from '../game-servers/models/game-server';
 import { IoProvider } from '../io-provider';
 import { PlayerRole } from '../players/models/player-role';
+import { QueueConfig } from '../queue/models/queue-config';
 import { QueueSlot } from '../queue/models/queue-slot';
 import { Game, IGame } from './models/game';
 import { GamePlayer } from './models/game-player';
@@ -39,8 +40,8 @@ class GameController {
     return game;
   }
 
-  public async launch(game: IGame, server: IGameServer) {
-    const infoForPlayer = await gameServerController.configure(server, game);
+  public async launch(queueConfig: QueueConfig, game: IGame, server: IGameServer) {
+    const infoForPlayer = await gameServerController.configure(queueConfig, server, game);
     this.updateConnectString(game.id, infoForPlayer.connectString);
   }
 
