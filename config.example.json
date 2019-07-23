@@ -9,5 +9,6 @@
   "log_relay": {
     "address": "localhost",
     "port": 9871
-  }
+  },
+  "queueConfig": "6v6"
 }

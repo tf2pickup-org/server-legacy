@@ -1,4 +1,5 @@
 import { Inject } from 'typescript-ioc';
+import { config } from '../config';
 import { gameServerController } from '../game-servers/game-server-controller';
 import { gameController } from '../games';
 import { IoProvider } from '../io-provider';
@@ -6,31 +7,11 @@ import logger from '../logger';
 import { QueueConfig } from './models/queue-config';
 import { QueueSlot } from './models/queue-slot';
 import { QueueState } from './models/queue-state';
-
-const config6v6: QueueConfig = {
-  teamCount: 2,
-  classes: [
-    { name: 'scout', count: 2 },
-    { name: 'soldier', count: 2 },
-    { name: 'demoman', count: 1 },
-    { name: 'medic', count: 1 },
-  ],
-  readyUpTimeout: 60 * 1000, // 1 minute
-  maps: [ 'cp_process_final', 'cp_snakewater_final1', 'cp_sunshine' ],
-};
-
-const configTest: QueueConfig = {
-  teamCount: 2,
-  classes: [
-    { name: 'soldier', count: 1 },
-  ],
-  readyUpTimeout: 10 * 1000, // 10 seconds
-  maps: [ 'cp_process_final', 'cp_snakewater_final1', 'cp_sunshine' ],
-};
+import { queueConfigs } from './queue-configs';
 
 class Queue {
 
-  public config: QueueConfig = config6v6;
+  public config: QueueConfig = queueConfigs[config.queueConfig];
   public slots: QueueSlot[] = [];
   public state: QueueState = 'waiting';
   public map: string;
@@ -50,6 +31,7 @@ class Queue {
   }
 
   constructor() {
+    logger.info(`queue config: ${config.queueConfig}`);
     this.reset();
     this.setupIo();
   }
