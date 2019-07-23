@@ -1,6 +1,13 @@
 {
   "production": false,
   "url": "http://localhost:3000",
+  "mongodb": {
+    "host": "localhost",
+    "port": 27017,
+    "db": "tf2pickuppl",
+    "username": "",
+    "password": ""
+  },
   "steam": {
     "apiKey": "your-steam-api-key"
   },
