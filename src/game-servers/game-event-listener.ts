@@ -26,9 +26,9 @@ export class GameEventListener extends EventEmitter {
   }
 
   private testForGameEvent(message: string, source: GameEventSource) {
-    if (message.match(/^World triggered \"Round_Start\"$/)) {
+    if (message.match(/World triggered \"Round_Start\"$/)) {
       this.emit('match start', { source });
-    } else if (message.match(/^World triggered \"Game_Over\" reason \".*\"$/)) {
+    } else if (message.match(/World triggered \"Game_Over\" reason \".*\"$/)) {
       this.emit('match end', { source });
     }
   }

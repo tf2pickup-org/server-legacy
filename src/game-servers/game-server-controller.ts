@@ -135,7 +135,12 @@ class GameServerController {
       port: source.port,
     });
     if (server) {
-      const assignment = await GameServerAssignment.findOne({ server });
+      const assignment = await GameServerAssignment
+        .find({ server })
+        .findOne({ $or: [
+          { 'game.state': 'launching' },
+          { 'game.state': 'started' },
+        ]});
       if (assignment) {
         return assignment.game;
       } else {
