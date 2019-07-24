@@ -8,6 +8,7 @@ export interface IPlayer extends Document {
   joinedAt: Date;
   avatarUrl: string;
   role: PlayerRole;
+  hasAcceptedRules: boolean;
 }
 
 const playerSchema: Schema = new Schema({
@@ -16,6 +17,7 @@ const playerSchema: Schema = new Schema({
   joinedAt: Schema.Types.Date,
   avatarUrl: { type: Schema.Types.String },
   role: Schema.Types.String,
+  hasAcceptedRules: Schema.Types.Boolean,
 }, {
   toJSON: { versionKey: false, transform: renameId },
 });

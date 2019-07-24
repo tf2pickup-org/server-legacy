@@ -29,6 +29,7 @@ passport.use(new steam.Strategy({
       name: etf2lProfile.name,
       avatarUrl: profile.photos[0].value,
       role: config.super_user === profile.id ? 'super-user' : null,
+      hasAcceptedRules: false,
     }).save();
     logger.info(`new user: ${etf2lProfile.name} (steamId: ${profile.id})`);
   } else {
