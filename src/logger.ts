@@ -1,4 +1,5 @@
 import { createLogger, format, transports } from 'winston';
+import { config } from './config';
 
 const logger = createLogger({
   level: 'info',
@@ -21,7 +22,7 @@ const logger = createLogger({
   ],
 });
 
-if (process.env.NODE_ENV !== 'production') {
+if (!config.production) {
   logger.add(new transports.Console({
     level: 'debug',
     format: format.combine(

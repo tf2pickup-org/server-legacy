@@ -18,17 +18,17 @@ export class GameEventListener extends EventEmitter {
   constructor() {
     super();
     this.logReceiver.on('data', (msg: LogMessage) => {
-      logger.debug(`log message from ${msg.receivedFrom.address}:${msg.receivedFrom.port}: ${msg.message}`);
       if (msg.isValid) {
+        logger.debug(`[${msg.receivedFrom.address}:${msg.receivedFrom.port}] ${msg.message}`);
         this.testForGameEvent(msg.message, msg.receivedFrom);
       }
     });
   }
 
   private testForGameEvent(message: string, source: GameEventSource) {
-    if (message.match(/World triggered \"Round_Start\"$/)) {
+    if (message.match(/[\d\/\s-:]+World triggered \"Round_Start\"$/)) {
       this.emit('match start', { source });
-    } else if (message.match(/World triggered \"Game_Over\" reason \".*\"$/)) {
+    } else if (message.match(/^[\d\/\s-:]+World triggered \"Game_Over\" reason \".*\"$/)) {
       this.emit('match end', { source });
     }
   }

@@ -1,6 +1,7 @@
-import { resolve } from 'dns';
+import { resolve as resolveCb } from 'dns';
 import generator from 'generate-password';
 import { Rcon } from 'rcon-client';
+import { promisify } from 'util';
 import { config } from '../config';
 import { gameController } from '../games';
 import { IGame } from '../games/models/game';
@@ -13,16 +14,7 @@ import { GameServerAssignment } from './models/game-server-assignment';
 import { ServerInfoForPlayer } from './models/server-info-for-player';
 import { verifyServer } from './verify-server';
 
-async function resolveAsync(address: string): Promise<string[]> {
-  return new Promise((_resolve, reject) => resolve(address, (error, addresses) => {
-      if (error) {
-        return reject(error);
-      } else {
-        return _resolve(addresses);
-      }
-    }),
-  );
-}
+const resolve = promisify(resolveCb);
 
 class GameServerController {
 
@@ -33,24 +25,28 @@ class GameServerController {
     setInterval(() => this.checkAllServers(), 30 * 1000);
 
     this.gameEventListener.on('match start', async ({ source }) => {
-      const game = await this.getGame(source);
-      if (game) {
+      try {
+        const game = await this.getGame(source);
         gameController.onMatchStarted(game);
+      } catch (error) {
+        logger.error(error.message);
       }
     });
 
     this.gameEventListener.on('match end', async ({ source }) => {
-      const game = await this.getGame(source);
-      if (game) {
+      try {
+        const game = await this.getGame(source);
         gameController.onMatchEnded(game);
+      } catch (error) {
+        logger.error(error.message);
       }
     });
   }
 
   public async addGameServer(gameServer: IGameServer): Promise<IGameServer> {
     await verifyServer(gameServer);
-    const addresses = await resolveAsync(gameServer.address);
-    console.log(`addresses for ${gameServer.address}: ${addresses}`);
+    const addresses = await resolve(gameServer.address);
+    console.debug(`resolved addresses for ${gameServer.address}: ${addresses}`);
     gameServer.resolvedIpAddresses = addresses;
     return await new GameServer(gameServer).save();
   }
@@ -129,27 +125,24 @@ class GameServerController {
     }
   }
 
-  private async getGame(source: GameEventSource): Promise<IGame | null> {
+  private async getGame(source: GameEventSource): Promise<IGame> {
     const server = await GameServer.findOne({
       resolvedIpAddresses: source.address,
       port: source.port,
     });
     if (server) {
       const assignment = await GameServerAssignment
-        .find({ server })
-        .findOne({ $or: [
-          { 'game.state': 'launching' },
-          { 'game.state': 'started' },
-        ]});
+        .find({ server: server.id })
+        .find({ $or: [{ 'game.state': 'started' }, { 'game.state': 'launching' }]})
+        .findOne();
+
       if (assignment) {
         return assignment.game;
       } else {
-        logger.error(`no game assigned for server ${server.name}`);
-        return null;
+        throw new Error(`no game assigned for server ${server.name}`);
       }
     } else {
-      logger.error(`no such server: ${source.address}:${source.port}`);
-      return null;
+      throw new Error(`no such server: ${source.address}:${source.port}`);
     }
   }
 
