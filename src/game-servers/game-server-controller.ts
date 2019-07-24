@@ -70,7 +70,7 @@ class GameServerController {
     logger.info(`configuring server ${server.name}...`);
 
     logger.debug(`using password ${server.rconPassword} for game server ${server.address}:${server.port}`);
-    const rcon = new Rcon({ packetResponseTimeout: 5000 });
+    const rcon = new Rcon({ packetResponseTimeout: 30000 });
     await rcon.connect({
       host: server.address,
       port: server.port,

@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import { LogMessage, LogReceiver } from 'srcds-log-receiver';
 import { config } from '../config';
+import logger from '../logger';
 
 export type GameEvent = 'match start' | 'match end';
 export interface GameEventSource {
@@ -17,6 +18,7 @@ export class GameEventListener extends EventEmitter {
   constructor() {
     super();
     this.logReceiver.on('data', (msg: LogMessage) => {
+      logger.debug(`log message from ${msg.receivedFrom.address}:${msg.receivedFrom.port}: ${msg.message}`);
       if (msg.isValid) {
         this.testForGameEvent(msg.message, msg.receivedFrom);
       }
