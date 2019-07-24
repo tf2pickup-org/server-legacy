@@ -7,6 +7,7 @@ export interface IGameServer extends Document {
   port: number;
   rconPassword: string;
   isOnline?: boolean;
+  resolvedIpAddresses: string[];
 }
 
 const gameServerSchema: Schema = new Schema({
@@ -15,6 +16,7 @@ const gameServerSchema: Schema = new Schema({
   port: { type: Schema.Types.Number, required: true },
   rconPassword: { type: Schema.Types.String, required: true },
   isOnline: Schema.Types.Boolean,
+  resolvedIpAddresses: [Schema.Types.String],
 }, {
   toJSON: { versionKey: false, transform: renameId },
 });

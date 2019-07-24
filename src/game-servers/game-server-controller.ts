@@ -1,3 +1,4 @@
+import { resolve } from 'dns';
 import generator from 'generate-password';
 import { Rcon } from 'rcon-client';
 import { config } from '../config';
@@ -11,6 +12,17 @@ import { GameServer, IGameServer } from './models/game-server';
 import { GameServerAssignment } from './models/game-server-assignment';
 import { ServerInfoForPlayer } from './models/server-info-for-player';
 import { verifyServer } from './verify-server';
+
+async function resolveAsync(address: string): Promise<string[]> {
+  return new Promise((_resolve, reject) => resolve(address, (error, addresses) => {
+      if (error) {
+        return reject(error);
+      } else {
+        return _resolve(addresses);
+      }
+    }),
+  );
+}
 
 class GameServerController {
 
@@ -37,6 +49,9 @@ class GameServerController {
 
   public async addGameServer(gameServer: IGameServer): Promise<IGameServer> {
     await verifyServer(gameServer);
+    const addresses = await resolveAsync(gameServer.address);
+    console.log(`addresses for ${gameServer.address}: ${addresses}`);
+    gameServer.resolvedIpAddresses = addresses;
     return await new GameServer(gameServer).save();
   }
 
@@ -115,7 +130,10 @@ class GameServerController {
   }
 
   private async getGame(source: GameEventSource): Promise<IGame | null> {
-    const server = await GameServer.findOne(source);
+    const server = await GameServer.findOne({
+      resolvedIpAddresses: source.address,
+      port: source.port,
+    });
     if (server) {
       const assignment = await GameServerAssignment.findOne({ server });
       if (assignment) {
