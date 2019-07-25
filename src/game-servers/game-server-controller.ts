@@ -181,7 +181,7 @@ class GameServerController {
    */
   private async getAssignedGame(server: IGameServer): Promise<IGame> {
     const assignment = await GameServerAssignment
-        .findOne({ server, gameRunning: true });
+      .findOne({ server }, null, { sort: { assignedAt: -1 }});
 
     if (assignment) {
       return assignment.game;

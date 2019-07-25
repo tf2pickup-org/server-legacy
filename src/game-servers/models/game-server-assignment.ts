@@ -6,6 +6,7 @@ export interface IGameServerAssignment extends Document {
   server: IGameServer;
   game: IGame;
   gameRunning: boolean;
+  assignedAt: Date;
 }
 
 const gameServerAssignmentSchema = new Schema({
@@ -22,10 +23,20 @@ const gameServerAssignmentSchema = new Schema({
     autopopulate: true,
   },
   gameRunning: Schema.Types.Boolean,
+  assignedAt: Schema.Types.Date,
 });
 
 // tslint:disable-next-line: no-var-requires
 gameServerAssignmentSchema.plugin(require('mongoose-autopopulate'));
+
+gameServerAssignmentSchema.pre('save', function(next) {
+  const self = this as IGameServerAssignment;
+  if (!self.assignedAt) {
+    self.assignedAt = new Date();
+  }
+
+  next();
+});
 
 const gameServerAssignmentDb = model<IGameServerAssignment>('GameServerAssignment', gameServerAssignmentSchema);
 export { gameServerAssignmentDb as GameServerAssignment };
