@@ -9,6 +9,7 @@ export interface IPlayer extends Document {
   avatarUrl: string;
   role: PlayerRole;
   hasAcceptedRules: boolean;
+  etf2lProfileId: number;
 }
 
 const playerSchema: Schema = new Schema({
@@ -18,6 +19,7 @@ const playerSchema: Schema = new Schema({
   avatarUrl: { type: Schema.Types.String },
   role: Schema.Types.String,
   hasAcceptedRules: Schema.Types.Boolean,
+  etf2lProfileId: Schema.Types.Number,
 }, {
   toJSON: { versionKey: false, transform: renameId },
 });
