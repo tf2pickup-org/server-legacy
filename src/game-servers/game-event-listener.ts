@@ -11,8 +11,8 @@ export interface GameEventSource {
 
 export class GameEventListener extends EventEmitter {
   private logReceiver: LogReceiver = new LogReceiver({
-    address: config.log_relay.address,
-    port: config.log_relay.port,
+    address: config.logRelay.address,
+    port: config.logRelay.port,
   });
 
   constructor() {

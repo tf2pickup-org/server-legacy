@@ -18,7 +18,7 @@ const resolve = promisify(resolveCb);
 
 class GameServerController {
 
-  private logAddress = `${config.log_relay.address}:${config.log_relay.port}`;
+  private logAddress = `${config.logRelay.address}:${config.logRelay.port}`;
   private gameEventListener = new GameEventListener();
 
   constructor() {

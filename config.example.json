@@ -14,7 +14,7 @@
   },
   "clientUrl": "localhost:4200",
   "superUser": "your-steam-id",
-  "log_relay": {
+  "logRelay": {
     "address": "localhost",
     "port": 9871
   },

@@ -32,7 +32,7 @@ passport.use(new steam.Strategy({
       steamId: profile.id,
       name,
       avatarUrl: profile.photos[0].value,
-      role: config.super_user === profile.id ? 'super-user' : null,
+      role: config.superUser === profile.id ? 'super-user' : null,
       hasAcceptedRules: false,
     }).save();
     logger.info(`new user: ${name} (steamId: ${profile.id})`);
