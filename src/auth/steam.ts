@@ -57,7 +57,7 @@ export function setupSteamAuth(theApp: Application) {
         return res.sendStatus(401);
       }
 
-      const token = sign({ id: user._id }, 'secret', { expiresIn: '1h' });
+      const token = sign({ id: user._id }, config.jwtSecret, { expiresIn: '1h' });
       return res.redirect(`${config.clientUrl}?token=${token}`);
     })(req, res, next);
   });
