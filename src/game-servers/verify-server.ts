@@ -11,10 +11,7 @@ export async function verifyServer(options: { address: string, port: number, rco
     password: options.rconPassword,
   });
 
-  const tftrueVersion = await rcon.send('tftrue_version');
-  logger.info(`tftrue version = ${tftrueVersion}`);
-
-  // TODO verify tftrue is installed
+  // todo check the server is properly configured (tftrue, sourcemod, etc.)
 
   await rcon.end();
   return true;

@@ -49,9 +49,13 @@ class GameServerController {
 
   public async addGameServer(gameServer: IGameServer): Promise<IGameServer> {
     await verifyServer(gameServer);
-    const addresses = await resolve(gameServer.address);
-    console.debug(`resolved addresses for ${gameServer.address}: ${addresses}`);
-    gameServer.resolvedIpAddresses = addresses;
+    gameServer.isOnline = true;
+
+    try {
+      const addresses = await resolve(gameServer.address);
+      console.info(`resolved addresses for ${gameServer.address}: ${addresses}`);
+      gameServer.resolvedIpAddresses = addresses;
+    } catch (error) { }
     return await new GameServer(gameServer).save();
   }
 

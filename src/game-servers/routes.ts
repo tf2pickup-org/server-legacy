@@ -37,7 +37,7 @@ router
       const ret = await gameServerController.addGameServer(gameServer);
       return res.status(201).send(ret.toJSON());
     } catch (error) {
-      logger.warning(error.message);
+      logger.error(error.message);
       return res.status(400).send({ message: error.message });
     }
   });
