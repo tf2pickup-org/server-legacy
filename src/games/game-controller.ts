@@ -2,6 +2,7 @@ import { Inject } from 'typescript-ioc';
 import { gameServerController } from '../game-servers/game-server-controller';
 import { IGameServer } from '../game-servers/models/game-server';
 import { IoProvider } from '../io-provider';
+import logger from '../logger';
 import { PlayerRole } from '../players/models/player-role';
 import { QueueConfig } from '../queue/models/queue-config';
 import { QueueSlot } from '../queue/models/queue-slot';
@@ -10,10 +11,6 @@ import { GamePlayer } from './models/game-player';
 
 class GameController {
   @Inject private ioProvider: IoProvider;
-
-  constructor() {
-    this.setupIo();
-  }
 
   public async create(queueSlots: QueueSlot[], map: string): Promise<IGame> {
     let team = 0;
@@ -51,7 +48,7 @@ class GameController {
 
   public async interruptGame(gameId: string, error?: string, interrupter?: SocketIO.Socket): Promise<IGame> {
     const game = await Game.findById(gameId);
-    game.state = 'interrputed';
+    game.state = 'interrupted';
 
     if (error) {
       game.error = error;
@@ -89,25 +86,6 @@ class GameController {
     game.save();
 
     this.ioProvider.io.emit('game updated', game);
-  }
-
-  private setupIo() {
-    this.ioProvider.io.on('connection', socket => {
-      if (socket.request.user.logged_in) {
-        const player = socket.request.user;
-        const role = player.role as PlayerRole;
-        if (role === 'admin' || role === 'super-user') {
-          socket.on('force end game', async (gameId: string, done) => {
-            try {
-              const game = await this.interruptGame(gameId, 'ended by admin', socket);
-              done({ game: game.toJSON() });
-            } catch (error) {
-              done({ error: error.message });
-            }
-          });
-        }
-      }
-    });
   }
 }
 

@@ -1,5 +1,8 @@
 import { Router } from 'express';
 import { Types } from 'mongoose';
+import { ensureAuthenticated, ensureRole } from '../auth';
+import logger from '../logger';
+import { gameController } from './game-controller';
 import { Game } from './models/game';
 
 const router = Router();
@@ -24,6 +27,18 @@ router
       }
     } else {
       res.status(400).send({ message: 'invalid id' });
+    }
+  })
+  .put(ensureAuthenticated, ensureRole('super-user', 'admin'), async (req, res) => {
+    const id = req.params.gameId;
+    if (!Types.ObjectId.isValid(id)) {
+      return res.status(400).send({ message: 'invalid game id' });
+    }
+
+    if (req.query.hasOwnProperty('force_end')) {
+      const game = await gameController.interruptGame(id, 'ended by admin');
+      logger.info(`game #${game.number} interrupted by ${req.user.name}`);
+      return res.status(204).send();
     }
   });
 
