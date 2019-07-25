@@ -65,8 +65,7 @@ class GameServerController {
       logger.debug(`checking availability of ${gs.name}...`);
 
       const games = await GameServerAssignment
-        .find({ server: gs.id })
-        .find({ $or: [{ 'game.state': 'started' }, { 'game.state': 'launching' }]});
+        .find({ server: gs.id, gameRunning: true });
 
       if (games.length === 0) {
         try {
@@ -82,7 +81,15 @@ class GameServerController {
   }
 
   public async assignGame(server: IGameServer, game: IGame) {
-    await new GameServerAssignment({ server, game }).save();
+    await new GameServerAssignment({ server, game, gameRunning: true }).save();
+  }
+
+  public async releaseServer(server: IGameServer) {
+    const assignment = await GameServerAssignment.findOne({ server, gameRunning: true });
+    if (assignment) {
+      assignment.gameRunning = false;
+      await assignment.save();
+    }
   }
 
   public async configure(queueConfig: QueueConfig, server: IGameServer, game: IGame): Promise<ServerInfoForPlayer> {
@@ -126,6 +133,10 @@ class GameServerController {
     }
   }
 
+  public async getServerForGame(game: IGame): Promise<IGameServer> {
+    return (await GameServerAssignment.findOne({ game })).server;
+  }
+
   private async cleanup(server: IGameServer) {
     try {
       const rcon = new Rcon({ packetResponseTimeout: 30000 });
@@ -137,6 +148,8 @@ class GameServerController {
 
       logger.debug(`[${server.name}] removing log address ${this.logAddress}...`);
       await rcon.send(`logaddress_del ${this.logAddress}`);
+      await rcon.end();
+      await this.releaseServer(server);
     } catch (error) {
       throw new Error(`could not cleanup server ${server.name} (${error.message})`);
     }
@@ -168,9 +181,7 @@ class GameServerController {
    */
   private async getAssignedGame(server: IGameServer): Promise<IGame> {
     const assignment = await GameServerAssignment
-      .find({ server })
-      .find({ $or: [{ 'game.state': 'started' }, { 'game.state': 'launching' }]})
-      .findOne();
+        .findOne({ server, gameRunning: true });
 
     if (assignment) {
       return assignment.game;

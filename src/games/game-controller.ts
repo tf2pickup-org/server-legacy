@@ -2,8 +2,6 @@ import { Inject } from 'typescript-ioc';
 import { gameServerController } from '../game-servers/game-server-controller';
 import { IGameServer } from '../game-servers/models/game-server';
 import { IoProvider } from '../io-provider';
-import logger from '../logger';
-import { PlayerRole } from '../players/models/player-role';
 import { QueueConfig } from '../queue/models/queue-config';
 import { QueueSlot } from '../queue/models/queue-slot';
 import { Game, IGame } from './models/game';
@@ -55,6 +53,9 @@ class GameController {
     }
 
     game.save();
+
+    const server = await gameServerController.getServerForGame(game);
+    await gameServerController.releaseServer(server);
 
     if (interrupter) {
       interrupter.broadcast.emit('game updated', game.toJSON());

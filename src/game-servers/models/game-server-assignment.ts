@@ -5,6 +5,7 @@ import { IGameServer } from './game-server';
 export interface IGameServerAssignment extends Document {
   server: IGameServer;
   game: IGame;
+  gameRunning: boolean;
 }
 
 const gameServerAssignmentSchema = new Schema({
@@ -20,6 +21,7 @@ const gameServerAssignmentSchema = new Schema({
     required: true,
     autopopulate: true,
   },
+  gameRunning: Schema.Types.Boolean,
 });
 
 // tslint:disable-next-line: no-var-requires
