@@ -30,6 +30,12 @@ if (!config.production) {
       format.simple(),
     ),
   }));
+} else {
+  logger.exceptions.handle(new transports.File({ filename: 'error.log' }));
+}
+
+if (config.debugLog) {
+  logger.add(new transports.File({ filename: 'debug.log', level: 'debug' }));
 }
 
 export default logger;

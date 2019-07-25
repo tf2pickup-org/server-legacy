@@ -1,5 +1,6 @@
 {
   "production": false,
+  "debugLog": false,
   "url": "http://localhost:3000",
   "mongodb": {
     "host": "localhost",
