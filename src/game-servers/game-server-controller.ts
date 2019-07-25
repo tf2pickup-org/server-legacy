@@ -63,7 +63,7 @@ class GameServerController {
 
     try {
       const addresses = await resolve(gameServer.address);
-      console.info(`resolved addresses for ${gameServer.address}: ${addresses}`);
+      logger.info(`resolved addresses for ${gameServer.address}: ${addresses}`);
       gameServer.resolvedIpAddresses = addresses;
     } catch (error) { }
     return await new GameServer(gameServer).save();
