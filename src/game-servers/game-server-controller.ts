@@ -29,7 +29,7 @@ class GameServerController {
       try {
         const server = await this.getSourceServer(source);
         const game = await this.getAssignedGame(server);
-        gameController.onMatchStarted(game);
+        await gameController.onMatchStarted(game);
       } catch (error) {
         logger.error(error.message);
       }
@@ -39,8 +39,18 @@ class GameServerController {
       try {
         const server = await this.getSourceServer(source);
         const game = await this.getAssignedGame(server);
-        gameController.onMatchEnded(game);
-        this.cleanup(server);
+        await gameController.onMatchEnded(game);
+        await this.cleanup(server);
+      } catch (error) {
+        logger.error(error.message);
+      }
+    });
+
+    this.gameEventListener.on('logs uploaded', async ({ source, logsUrl }) => {
+      try {
+        const server = await this.getSourceServer(source);
+        const game = await this.getAssignedGame(server);
+        await gameController.onLogsUploaded(game, logsUrl);
       } catch (error) {
         logger.error(error.message);
       }

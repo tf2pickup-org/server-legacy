@@ -26,10 +26,14 @@ export class GameEventListener extends EventEmitter {
   }
 
   private testForGameEvent(message: string, source: GameEventSource) {
-    if (message.match(/[\d\/\s-:]+World triggered \"Round_Start\"$/)) {
+    if (message.match(/^[\d\/\s-:]+World triggered \"Round_Start\"$/)) {
       this.emit('match start', { source });
     } else if (message.match(/^[\d\/\s-:]+World triggered \"Game_Over\" reason \".*\"$/)) {
       this.emit('match end', { source });
+    } else if (message.match(/^[\d\/\s-:]+\[TFTrue\].+\shttp:\/\/logs\.tf\/(\d+)\..*$/)) {
+      const matches = message.match(/^[\d\/\s-:]+\[TFTrue\].+\shttp:\/\/logs\.tf\/(\d+)\..*$/);
+      const logsUrl = `http://logs.tf/${matches[1]}`;
+      this.emit('logs uploaded', { source, logsUrl });
     }
   }
 

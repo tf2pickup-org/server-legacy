@@ -81,6 +81,12 @@ class GameController {
     this.ioProvider.io.emit('game updated', game);
   }
 
+  public async onLogsUploaded(game: IGame, logsUrl: string) {
+    game.logsUrl = logsUrl;
+    await game.save();
+    this.ioProvider.io.emit('game updated', game);
+  }
+
   private async updateConnectString(gameId: string, connectString: string) {
     const game = await Game.findById(gameId);
     game.connectString = connectString;
