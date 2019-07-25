@@ -17,5 +17,6 @@
     "address": "localhost",
     "port": 9871
   },
-  "queueConfig": "6v6"
+  "queueConfig": "6v6",
+  "requireEtf2lAccount": false
 }
