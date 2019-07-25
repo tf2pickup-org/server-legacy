@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { ensureAuthenticated } from '../auth';
 import { gameController } from '../games';
+import { Player } from '../players/models/player';
 
 const router = Router();
 
@@ -12,6 +13,15 @@ router
       ...req.user.toJSON(),
       activeGameId: activeGame ? activeGame.id : null,
     });
+  })
+  .put(ensureAuthenticated, async (req, res) => {
+    if (req.query.hasOwnProperty('accept_terms')) {
+      const player = await Player.findById(req.user.id);
+      player.hasAcceptedRules = true;
+      await player.save();
+    }
+
+    return res.status(204).send();
   });
 
 export default router;
