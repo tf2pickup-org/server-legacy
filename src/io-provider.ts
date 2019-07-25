@@ -1,7 +1,7 @@
 import socketio from 'socket.io';
 import { authenticate } from 'socketio-jwt-auth';
 import { Inject, Singleton } from 'typescript-ioc';
-import { jwtConfig } from './auth/jwt';
+import { config } from './config';
 import { ExpressAppProvider } from './express-app-provider';
 import logger from './logger';
 import { Player } from './players/models/player';
@@ -21,7 +21,7 @@ export class IoProvider {
 
   private initializeAuth() {
     this.io.use(authenticate({
-      secret: jwtConfig.secret,
+      secret: config.jwtSecret,
       succeedWithoutToken: true,
     }, async (payload: { id?: any }, done) => {
       if (payload && payload.id) {

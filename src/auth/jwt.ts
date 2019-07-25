@@ -4,22 +4,8 @@ import jwt from 'passport-jwt';
 import { config } from '../config';
 import { Player } from '../players/models/player';
 
-function makeSecret(length: number) {
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result: string = '';
-  for (let i = 0; i < length; i++) {
-     result += characters.charAt(Math.floor(Math.random() *  characters.length));
-  }
-
-  return result;
-}
-
-export const jwtConfig = {
-  secret: config.production ? makeSecret(32) : 'secret',
-};
-
 passport.use(new jwt.Strategy({
-  secretOrKey: jwtConfig.secret,
+  secretOrKey: config.jwtSecret,
   jwtFromRequest: jwt.ExtractJwt.fromAuthHeaderAsBearerToken(),
 }, async (payload: { id: any }, done) => {
   try {
