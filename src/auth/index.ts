@@ -7,3 +7,5 @@ export function setupAuth(app: Application) {
 
 export { ensureAuthenticated } from './jwt';
 export { ensureRole } from './ensure-role';
+export { keyStore } from './key-store';
+export { default as routes } from './routes';

@@ -157,7 +157,7 @@ class Queue {
         socket.on('join queue', async (slotId: number, done) => {
           try {
             const slot = await this.join(slotId, player.id, socket);
-            done({ slot });
+            done({ value: slot });
           } catch (error) {
             done({ error: error.message });
           }
@@ -166,7 +166,7 @@ class Queue {
         socket.on('leave queue', done => {
           try {
             const slot = this.leave(player.id, socket);
-            done({ slot });
+            done({ value: slot });
           } catch (error) {
             done({ error: error.message });
           }
@@ -175,11 +175,13 @@ class Queue {
         socket.on('player ready', async done => {
           try {
             const slot = await this.ready(player.id, socket);
-            done({ slot });
+            done({ value: slot });
           } catch (error) {
             done({ error: error.message });
           }
         });
+      } else {
+        logger.warning('user not logged in');
       }
     });
   }

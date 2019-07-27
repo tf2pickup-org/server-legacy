@@ -1,11 +1,11 @@
 import { NextFunction, Request, Response } from 'express';
 import passport from 'passport';
 import jwt from 'passport-jwt';
-import { config } from '../config';
 import { Player } from '../players/models/player';
+import { keyStore } from './key-store';
 
 passport.use(new jwt.Strategy({
-  secretOrKey: config.jwtSecret,
+  secretOrKey: keyStore.secretFor('auth'),
   jwtFromRequest: jwt.ExtractJwt.fromAuthHeaderAsBearerToken(),
 }, async (payload: { id: any }, done) => {
   try {

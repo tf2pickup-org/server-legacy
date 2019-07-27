@@ -1,6 +1,5 @@
 import { Etf2lPlayer } from 'etf2l/etf2l-player';
 import { Application } from 'express';
-import { sign } from 'jsonwebtoken';
 import passport from 'passport';
 import steam from 'passport-steam';
 import { config } from '../config';
@@ -8,6 +7,7 @@ import { fetchEtf2lPlayerInfo } from '../etf2l';
 import logger from '../logger';
 import { IPlayer, Player } from '../players/models/player';
 import { SteamProfile } from '../profile/models/steam-profile';
+import { generateToken } from './generate-token';
 
 passport.use(new steam.Strategy({
   returnURL: `${config.url}/auth/steam/return`,
@@ -58,8 +58,9 @@ export function setupSteamAuth(theApp: Application) {
         return res.sendStatus(401);
       }
 
-      const token = sign({ id: user._id }, config.jwtSecret, { expiresIn: '1h' });
-      return res.redirect(`${config.clientUrl}?token=${token}`);
+      const refreshToken = generateToken('refresh', user.id);
+      const authToken = generateToken('auth', user.id);
+      return res.redirect(`${config.clientUrl}?refresh_token=${refreshToken}&auth_token=${authToken}`);
     })(req, res, next);
   });
 }
