@@ -1,5 +1,4 @@
 import { sign } from 'jsonwebtoken';
-import { config } from '../config';
 import { keyStore } from './key-store';
 
 /**
