@@ -1,23 +1,24 @@
 import { Application } from 'express';
 import { Server } from 'http';
-import { Inject, Singleton } from 'typescript-ioc';
+import { inject, injectable } from 'inversify';
 import { setupAuth } from './auth';
+import { container } from './container';
 import { connectToTheDatabase } from './database';
 import { ExpressAppProvider } from './express-app-provider';
+import { GameEventHandler } from './game-servers/game-event-handler';
 import logger from './logger';
 import { Routes } from './routes';
 
-@Singleton
+@injectable()
 export class App {
 
-  @Inject
-  private expressAppProvider: ExpressAppProvider;
-
-  private routes: Routes;
   private app: Application;
   private server: Server;
 
-  constructor() {
+  constructor(
+    @inject(ExpressAppProvider) private expressAppProvider: ExpressAppProvider,
+    @inject(GameEventHandler) private gameEventHandler: GameEventHandler,
+  ) {
     this.app = this.expressAppProvider.app;
     this.server = this.expressAppProvider.server;
   }
@@ -25,9 +26,8 @@ export class App {
   public async initialize() {
     await connectToTheDatabase();
     setupAuth(this.app);
-
-    this.routes = new Routes();
-    this.routes.setupRoutes(this.app);
+    Routes.setupRoutes(this.app);
+    this.gameEventHandler.initialize();
   }
 
   public listen(port: number) {
@@ -37,3 +37,5 @@ export class App {
   }
 
 }
+
+container.bind(App).toSelf();

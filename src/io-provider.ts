@@ -1,18 +1,20 @@
+import { inject, injectable } from 'inversify';
 import socketio from 'socket.io';
 import { authenticate } from 'socketio-jwt-auth';
-import { Inject, Singleton } from 'typescript-ioc';
-import { keyStore } from './auth';
+import { KeyStore } from './auth';
+import { container } from './container';
 import { ExpressAppProvider } from './express-app-provider';
 import logger from './logger';
 import { Player } from './players/models/player';
 
-@Singleton
+@injectable()
 export class IoProvider {
 
   public io: SocketIO.Server;
 
   constructor(
-    @Inject private expressAppProvider: ExpressAppProvider,
+    @inject(ExpressAppProvider) private expressAppProvider: ExpressAppProvider,
+    @inject(KeyStore) private keyStore: KeyStore,
   ) {
     this.io = socketio(this.expressAppProvider.server);
     this.initializeAuth();
@@ -21,7 +23,7 @@ export class IoProvider {
 
   private initializeAuth() {
     this.io.use(authenticate({
-      secret: keyStore.secretFor('ws'),
+      secret: this.keyStore.getKey('ws', 'verify') as string,
       succeedWithoutToken: true,
     }, async (payload: { id?: any }, done) => {
       logger.debug(`verifying`);
@@ -52,3 +54,5 @@ export class IoProvider {
   }
 
 }
+
+container.bind(IoProvider).toSelf();

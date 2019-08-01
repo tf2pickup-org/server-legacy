@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { ensureAuthenticated } from '../auth';
-import { gameController } from '../games';
+import { container } from '../container';
+import { GameController } from '../games';
 import { Player } from '../players/models/player';
 
 const router = Router();
@@ -8,6 +9,7 @@ const router = Router();
 router
   .route('/')
   .get(ensureAuthenticated, async (req, res) => {
+    const gameController = container.get(GameController);
     const activeGame = await gameController.activeGameForPlayer(req.user.id);
     res.status(200).send({
       ...req.user.toJSON(),

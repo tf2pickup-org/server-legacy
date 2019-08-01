@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { Types } from 'mongoose';
 import { ensureAuthenticated, ensureRole } from '../auth';
+import { container } from '../container';
 import logger from '../logger';
-import { gameController } from './game-controller';
+import { GameController } from './game-controller';
 import { Game } from './models/game';
 
 const router = Router();
@@ -36,6 +37,7 @@ router
     }
 
     if (req.query.hasOwnProperty('force_end')) {
+      const gameController = container.get(GameController);
       const game = await gameController.interruptGame(id, 'ended by admin');
       logger.info(`game #${game.number} interrupted by ${req.user.name}`);
       return res.status(204).send();

@@ -3,11 +3,12 @@ import { Application } from 'express';
 import passport from 'passport';
 import steam from 'passport-steam';
 import { config } from '../config';
+import { container } from '../container';
 import { fetchEtf2lPlayerInfo } from '../etf2l';
 import logger from '../logger';
 import { IPlayer, Player } from '../players/models/player';
 import { SteamProfile } from '../profile/models/steam-profile';
-import { generateToken } from './generate-token';
+import { TokenController } from './token-controller';
 
 passport.use(new steam.Strategy({
   returnURL: `${config.url}/auth/steam/return`,
@@ -58,8 +59,9 @@ export function setupSteamAuth(theApp: Application) {
         return res.sendStatus(401);
       }
 
-      const refreshToken = generateToken('refresh', user.id);
-      const authToken = generateToken('auth', user.id);
+      const tokenController = container.get(TokenController);
+      const refreshToken = tokenController.generateToken('refresh', user.id);
+      const authToken = tokenController.generateToken('auth', user.id);
       return res.redirect(`${config.clientUrl}?refresh_token=${refreshToken}&auth_token=${authToken}`);
     })(req, res, next);
   });

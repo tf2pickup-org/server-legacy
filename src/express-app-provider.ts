@@ -2,10 +2,11 @@ import { json, urlencoded } from 'body-parser';
 import cors from 'cors';
 import express from 'express';
 import { createServer, Server } from 'http';
+import { injectable } from 'inversify';
 import passport from 'passport';
-import { Singleton } from 'typescript-ioc';
+import { container } from './container';
 
-@Singleton
+@injectable()
 export class ExpressAppProvider {
 
   public app: express.Application = express();
@@ -21,3 +22,5 @@ export class ExpressAppProvider {
   }
 
 }
+
+container.bind(ExpressAppProvider).toSelf();

@@ -1,11 +1,13 @@
 import { NextFunction, Request, Response } from 'express';
 import passport from 'passport';
 import jwt from 'passport-jwt';
+import { container } from '../container';
 import { Player } from '../players/models/player';
-import { keyStore } from './key-store';
+import { KeyStore } from './key-store';
 
 passport.use(new jwt.Strategy({
-  secretOrKey: keyStore.secretFor('auth'),
+  secretOrKey: container.get(KeyStore).getKey('auth', 'verify'),
+  jsonWebTokenOptions: { algorithms: ['ES512'] },
   jwtFromRequest: jwt.ExtractJwt.fromAuthHeaderAsBearerToken(),
 }, async (payload: { id: any }, done) => {
   try {

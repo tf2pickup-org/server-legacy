@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { Document, Types } from 'mongoose';
 import { ensureAuthenticated, ensureRole } from '../auth';
+import { container } from '../container';
 import logger from '../logger';
 import { IPlayer } from '../players/models/player';
 import { renameId } from '../utils';
-import { gameServerController } from './game-server-controller';
+import { GameServerController } from './game-server-controller';
 import { GameServer, IGameServer } from './models/game-server';
 
 function removeRcon(user: IPlayer): (doc: Document, ret: any) => any {
@@ -34,6 +35,7 @@ router
     }
 
     try {
+      const gameServerController = container.get(GameServerController);
       const ret = await gameServerController.addGameServer(gameServer);
       return res.status(201).send(ret.toJSON());
     } catch (error) {

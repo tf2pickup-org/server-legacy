@@ -1,5 +1,6 @@
-import { Inject } from 'typescript-ioc';
-import { gameServerController } from '../game-servers/game-server-controller';
+import { inject, injectable } from 'inversify';
+import { container } from '../container';
+import { GameServerController } from '../game-servers/game-server-controller';
 import { IGameServer } from '../game-servers/models/game-server';
 import { IoProvider } from '../io-provider';
 import { QueueConfig } from '../queue/models/queue-config';
@@ -7,8 +8,13 @@ import { QueueSlot } from '../queue/models/queue-slot';
 import { Game, IGame } from './models/game';
 import { GamePlayer } from './models/game-player';
 
-class GameController {
-  @Inject private ioProvider: IoProvider;
+@injectable()
+export class GameController {
+
+  constructor(
+    @inject(IoProvider) private ioProvider: IoProvider,
+    @inject(GameServerController) private gameServerController: GameServerController,
+  ) { }
 
   public async create(queueSlots: QueueSlot[], map: string): Promise<IGame> {
     let team = 0;
@@ -36,7 +42,7 @@ class GameController {
   }
 
   public async launch(queueConfig: QueueConfig, game: IGame, server: IGameServer) {
-    const infoForPlayer = await gameServerController.configure(queueConfig, server, game);
+    const infoForPlayer = await this.gameServerController.configure(queueConfig, server, game);
     this.updateConnectString(game.id, infoForPlayer.connectString);
   }
 
@@ -54,8 +60,8 @@ class GameController {
 
     game.save();
 
-    const server = await gameServerController.getServerForGame(game);
-    await gameServerController.releaseServer(server);
+    const server = await this.gameServerController.getServerForGame(game);
+    await this.gameServerController.releaseServer(server);
 
     if (interrupter) {
       interrupter.broadcast.emit('game updated', game.toJSON());
@@ -96,4 +102,4 @@ class GameController {
   }
 }
 
-export const gameController = new GameController();
+container.bind(GameController).toSelf();

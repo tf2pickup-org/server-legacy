@@ -1,5 +1,4 @@
 import { Rcon } from 'rcon-client';
-import logger from '../logger';
 
 /**
  * Verify the game server is valid for playing pickup games (has tftrue, etc.).

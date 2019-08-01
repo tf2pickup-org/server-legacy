@@ -1,7 +1,8 @@
-import { Inject } from 'typescript-ioc';
+import { inject, injectable } from 'inversify';
 import { config } from '../config';
-import { gameServerController } from '../game-servers/game-server-controller';
-import { gameController } from '../games';
+import { container } from '../container';
+import { GameServerController } from '../game-servers/game-server-controller';
+import { GameController } from '../games';
 import { IoProvider } from '../io-provider';
 import logger from '../logger';
 import { Player } from '../players/models/player';
@@ -10,14 +11,14 @@ import { QueueSlot } from './models/queue-slot';
 import { QueueState } from './models/queue-state';
 import { queueConfigs } from './queue-configs';
 
-class Queue {
+@injectable()
+export class Queue {
 
   public config: QueueConfig = queueConfigs[config.queueConfig];
   public slots: QueueSlot[] = [];
   public state: QueueState = 'waiting';
   public map: string;
   private timer: NodeJS.Timeout;
-  @Inject private ioProvider: IoProvider;
 
   get requiredPlayerCount() {
     return this.config.classes.reduce((prev, curr) => prev + curr.count, 0) * this.config.teamCount;
@@ -31,7 +32,11 @@ class Queue {
     return this.slots.reduce((prev, curr) => curr.playerReady ? prev + 1 : prev, 0);
   }
 
-  constructor() {
+  constructor(
+    @inject(IoProvider) private ioProvider: IoProvider,
+    @inject(GameController) private gameController: GameController,
+    @inject(GameServerController) private gameServerController: GameServerController,
+  ) {
     logger.info(`queue config: ${config.queueConfig}`);
     this.reset();
     this.setupIo();
@@ -59,7 +64,7 @@ class Queue {
       throw new Error('no such player');
     }
 
-    if (!!(await gameController.activeGameForPlayer(playerId))) {
+    if (!!(await this.gameController.activeGameForPlayer(playerId))) {
       throw new Error('player involved in a currently active game');
     }
 
@@ -150,7 +155,7 @@ class Queue {
 
         socket.on('disconnect', () => {
           try {
-            queue.leave(player.id);
+            this.leave(player.id);
           } catch (error) { }
         });
 
@@ -181,7 +186,7 @@ class Queue {
           }
         });
       } else {
-        logger.warning('user not logged in');
+        logger.info('user not logged in');
       }
     });
   }
@@ -259,17 +264,17 @@ class Queue {
   }
 
   private async launch() {
-    const game = await gameController.create(this.slots, this.map);
+    const game = await this.gameController.create(this.slots, this.map);
     logger.info(`game ${game.id} created`);
 
-    const server = await gameServerController.findFirstFreeGameServer();
+    const server = await this.gameServerController.findFirstFreeGameServer();
     if (server) {
-      await gameServerController.assignGame(server, game);
+      await this.gameServerController.assignGame(server, game);
       logger.info(`game ${game.id} will be played on ${server.name}`);
-      await gameController.launch(this.config, game, server);
+      await this.gameController.launch(this.config, game, server);
     } else {
       logger.error('no servers available!');
-      await gameController.interruptGame(game.id, 'no servers available');
+      await this.gameController.interruptGame(game.id, 'no servers available');
     }
 
     setTimeout(() => this.reset(), 0);
@@ -281,4 +286,4 @@ class Queue {
 
 }
 
-export const queue = new Queue();
+container.bind(Queue).toSelf();

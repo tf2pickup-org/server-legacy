@@ -1,60 +1,27 @@
 import { resolve as resolveCb } from 'dns';
 import generator from 'generate-password';
+import { injectable } from 'inversify';
 import { Rcon } from 'rcon-client';
 import { promisify } from 'util';
 import { config } from '../config';
-import { gameController } from '../games';
-import { IGame } from '../games/models/game';
+import { container } from '../container';
+import { IGame } from '../games';
 import logger from '../logger';
 import { QueueConfig } from '../queue/models/queue-config';
-import { GameEventListener, GameEventSource } from './game-event-listener';
 import { isServerOnline } from './is-server-online';
-import { GameServer, IGameServer } from './models/game-server';
-import { GameServerAssignment } from './models/game-server-assignment';
-import { ServerInfoForPlayer } from './models/server-info-for-player';
+import { GameServer, GameServerAssignment, IGameServer, ServerInfoForPlayer } from './models';
 import { verifyServer } from './verify-server';
 
 const resolve = promisify(resolveCb);
 
-class GameServerController {
+@injectable()
+export class GameServerController {
 
   private logAddress = `${config.logRelay.address}:${config.logRelay.port}`;
-  private gameEventListener = new GameEventListener();
 
   constructor() {
     // check all servers every 30 seconds
     setInterval(() => this.checkAllServers(), 30 * 1000);
-
-    this.gameEventListener.on('match start', async ({ source }) => {
-      try {
-        const server = await this.getSourceServer(source);
-        const game = await this.getAssignedGame(server);
-        await gameController.onMatchStarted(game);
-      } catch (error) {
-        logger.error(error.message);
-      }
-    });
-
-    this.gameEventListener.on('match end', async ({ source }) => {
-      try {
-        const server = await this.getSourceServer(source);
-        const game = await this.getAssignedGame(server);
-        await gameController.onMatchEnded(game);
-        await this.cleanup(server);
-      } catch (error) {
-        logger.error(error.message);
-      }
-    });
-
-    this.gameEventListener.on('logs uploaded', async ({ source, logsUrl }) => {
-      try {
-        const server = await this.getSourceServer(source);
-        const game = await this.getAssignedGame(server);
-        await gameController.onLogsUploaded(game, logsUrl);
-      } catch (error) {
-        logger.error(error.message);
-      }
-    });
   }
 
   public async addGameServer(gameServer: IGameServer): Promise<IGameServer> {
@@ -147,7 +114,7 @@ class GameServerController {
     return (await GameServerAssignment.findOne({ game })).server;
   }
 
-  private async cleanup(server: IGameServer) {
+  public async cleanup(server: IGameServer) {
     try {
       const rcon = new Rcon({ packetResponseTimeout: 30000 });
       await rcon.connect({
@@ -174,32 +141,6 @@ class GameServerController {
     }
   }
 
-  private async getSourceServer(source: GameEventSource): Promise<IGameServer> {
-    const server = await GameServer.findOne({
-      resolvedIpAddresses: source.address,
-      port: source.port,
-    });
-    if (server) {
-      return server;
-    } else {
-      throw new Error(`no such server: ${source.address}:${source.port}`);
-    }
-  }
-
-  /**
-   * Returns an ongoing game that takes place on the given server.
-   */
-  private async getAssignedGame(server: IGameServer): Promise<IGame> {
-    const assignment = await GameServerAssignment
-      .findOne({ server }, null, { sort: { assignedAt: -1 }});
-
-    if (assignment) {
-      return assignment.game;
-    } else {
-      throw new Error(`no game assigned for server ${server.name}`);
-    }
-  }
-
 }
 
-export const gameServerController = new GameServerController();
+container.bind(GameServerController).toSelf();
