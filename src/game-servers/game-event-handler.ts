@@ -32,7 +32,14 @@ export class GameEventHandler {
         const server = await this.getSourceServer(source);
         const game = await this.getAssignedGame(server);
         await this.gameController.onMatchEnded(game);
-        await this.gameServerController.cleanup(server);
+
+        setTimeout(async () => {
+          try {
+            await this.gameServerController.cleanup(server);
+          } catch (error) {
+            logger.error(error.message);
+          }
+        }, 10 * 1000);
       } catch (error) {
         logger.error(error.message);
       }
