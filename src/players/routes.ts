@@ -26,7 +26,7 @@ router
       res.status(400).send({ message: 'invalid id' });
     }
   })
-  .put(ensureAuthenticated, ensureRole('super-user'), async (req, res) => {
+  .put(ensureAuthenticated, ensureRole('super-user', 'admin'), async (req, res) => {
     const id = req.params.playerId;
     if (!Types.ObjectId.isValid(id)) {
       return res.status(400).send({ message: 'invalid id' });
@@ -39,6 +39,7 @@ router
 
     const player = await Player.findById(id);
     player.name = editedPlayer.name;
+    player.skill = editedPlayer.skill;
     await player.save();
 
     return res.status(200).send(player.toJSON());

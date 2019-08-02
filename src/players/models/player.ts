@@ -10,6 +10,7 @@ export interface IPlayer extends Document {
   role: PlayerRole;
   hasAcceptedRules: boolean;
   etf2lProfileId: number;
+  skill: { [gameClass: string]: number };
 }
 
 const playerSchema: Schema = new Schema({
@@ -20,6 +21,7 @@ const playerSchema: Schema = new Schema({
   role: Schema.Types.String,
   hasAcceptedRules: Schema.Types.Boolean,
   etf2lProfileId: Schema.Types.Number,
+  skill: { type: Map, of: String },
 }, {
   toJSON: { versionKey: false, transform: renameId },
 });
