@@ -264,7 +264,7 @@ export class Queue {
   }
 
   private async launch() {
-    const game = await this.gameController.create(this.slots, this.map);
+    const game = await this.gameController.create(this.slots, this.config, this.map);
     logger.info(`game ${game.id} created`);
 
     const server = await this.gameServerController.findFirstFreeGameServer();
