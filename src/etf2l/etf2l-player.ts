@@ -3,4 +3,5 @@ export interface Etf2lPlayer {
   name: string;
   country: string;
   classes: string[];
+  bans?: Array<{ end: number, reason: string, start: number }>;
 }

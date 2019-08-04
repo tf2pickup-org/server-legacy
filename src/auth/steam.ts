@@ -23,6 +23,9 @@ passport.use(new steam.Strategy({
     let etf2lProfile: Etf2lPlayer;
     try {
       etf2lProfile = await fetchEtf2lPlayerInfo(profile.id);
+      if (etf2lProfile.bans && etf2lProfile.bans.filter(b => b.end > Date.now()).length > 0) {
+        return done('etf2l banned', null);
+      }
       name = etf2lProfile.name;
     } catch (error) {
       if (config.requireEtf2lAccount) {
