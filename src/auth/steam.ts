@@ -8,7 +8,6 @@ import { fetchEtf2lPlayerInfo } from '../etf2l';
 import logger from '../logger';
 import { IPlayer, Player } from '../players/models/player';
 import { SteamProfile } from '../profile/models/steam-profile';
-import { Queue } from '../queue/queue';
 import { queueConfigs } from '../queue/queue-configs';
 import { TokenController } from './token-controller';
 
@@ -31,8 +30,6 @@ passport.use(new steam.Strategy({
       }
     }
 
-    const queueConfig = queueConfigs[config.queueConfig];
-
     player = await new Player({
       steamId: profile.id,
       name,
@@ -40,7 +37,6 @@ passport.use(new steam.Strategy({
       role: config.superUser === profile.id ? 'super-user' : null,
       hasAcceptedRules: false,
       etf2lProfileId: etf2lProfile ? etf2lProfile.id : null,
-      skill: queueConfig.classes.reduce((map, curr) => { map[curr.name] = 1; return map; }, { }),
     }).save();
     logger.info(`new user: ${name} (steamId: ${profile.id})`);
   } else {

@@ -4,10 +4,10 @@ import { GameServerController } from '../game-servers/game-server-controller';
 import { IGameServer } from '../game-servers/models/game-server';
 import { IoProvider } from '../io-provider';
 import { Player } from '../players/models/player';
+import { PlayerSkill } from '../players/models/player-skill';
 import { QueueConfig } from '../queue/models/queue-config';
 import { QueueSlot } from '../queue/models/queue-slot';
 import { Game, IGame } from './models/game';
-import { GamePlayer } from './models/game-player';
 import { pickTeams, PlayerSlot } from './pick-teams';
 
 async function queueSlotToPlayerSlot(queueSlot: QueueSlot): Promise<PlayerSlot> {
@@ -17,7 +17,13 @@ async function queueSlotToPlayerSlot(queueSlot: QueueSlot): Promise<PlayerSlot> 
     throw new Error('no such player');
   }
 
-  return { playerId, gameClass, skill: player.skill[gameClass] };
+  const skill = await PlayerSkill.findOne({ player: playerId });
+  if (skill) {
+    return { playerId, gameClass, skill: skill.skill[gameClass] };
+  } else {
+    return { playerId, gameClass, skill: 1 };
+  }
+
 }
 
 @injectable()
