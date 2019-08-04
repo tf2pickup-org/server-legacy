@@ -9,6 +9,13 @@ import { IPlayerSkill, PlayerSkill } from './models/player-skill';
 const router = Router();
 
 router
+  .route('/')
+  .get(async (req, res) => {
+    const players = await Player.find().sort({ joinedAt: -1 });
+    return res.status(200).send(players.map(p => p.toJSON()));
+  });
+
+router
   .route('/:playerId')
   .get(async (req, res) => {
     const id = req.params.playerId;
