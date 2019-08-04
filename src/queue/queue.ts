@@ -281,7 +281,8 @@ export class Queue {
   }
 
   private randomizeMap() {
-    this.map = this.config.maps[Math.floor(Math.random() * this.config.maps.length)];
+    const mapPool = this.config.maps.filter(map => map !== this.map);
+    this.map = mapPool[Math.floor(Math.random() * mapPool.length)];
   }
 
 }
