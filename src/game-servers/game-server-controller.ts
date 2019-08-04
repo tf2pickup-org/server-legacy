@@ -7,6 +7,7 @@ import { config } from '../config';
 import { container } from '../container';
 import { IGame } from '../games';
 import logger from '../logger';
+import { Player } from '../players/models/player';
 import { QueueConfig } from '../queue/models/queue-config';
 import { isServerOnline } from './is-server-online';
 import { GameServer, GameServerAssignment, IGameServer, ServerInfoForPlayer } from './models';
@@ -71,6 +72,7 @@ export class GameServerController {
 
   public async configure(queueConfig: QueueConfig, server: IGameServer, game: IGame): Promise<ServerInfoForPlayer> {
     logger.info(`configuring server ${server.name}...`);
+    logger.debug(JSON.stringify(game));
     logger.debug(`[${server.address}:${server.port}] using rcon password ${server.rconPassword}`);
     try {
       const rcon = new Rcon({ packetResponseTimeout: 30000 });
@@ -96,6 +98,21 @@ export class GameServerController {
       const password = generator.generate({ length: 10, numbers: true, uppercase: true });
       logger.debug(`[${server.name}] settings password to ${password}...`);
       await rcon.send(`sv_password ${password}`);
+
+      for (const slot of game.slots) {
+        const player = await Player.findById(slot.playerId);
+        const team = parseInt(slot.teamId, 10) + 2;
+
+        const cmd = [
+          `sm_game_player_add ${player.steamId}`,
+          `-name ${player.name}`,
+          `-team ${team}`,
+          `-class ${slot.gameClass}`,
+        ].join(' ');
+        logger.debug(`[${server.name}] ${cmd}`);
+        await rcon.send(cmd);
+      }
+
       await rcon.end();
       logger.info(`done with configuring server ${server.name}`);
 
@@ -125,6 +142,7 @@ export class GameServerController {
 
       logger.debug(`[${server.name}] removing log address ${this.logAddress}...`);
       await rcon.send(`logaddress_del ${this.logAddress}`);
+      await rcon.send('sm_game_player_delall');
       await rcon.end();
       await this.releaseServer(server);
     } catch (error) {
