@@ -3,6 +3,7 @@ import { container } from '../container';
 import { GameServerController } from '../game-servers/game-server-controller';
 import { IGameServer } from '../game-servers/models/game-server';
 import { IoProvider } from '../io-provider';
+import logger from '../logger';
 import { Player } from '../players/models/player';
 import { PlayerSkill } from '../players/models/player-skill';
 import { QueueConfig } from '../queue/models/queue-config';
@@ -62,8 +63,13 @@ export class GameController {
   }
 
   public async launch(queueConfig: QueueConfig, game: IGame, server: IGameServer) {
-    const infoForPlayer = await this.gameServerController.configure(queueConfig, server, game);
-    this.updateConnectString(game.id, infoForPlayer.connectString);
+    try {
+      const infoForPlayer = await this.gameServerController.configure(queueConfig, server, game);
+      this.updateConnectString(game.id, infoForPlayer.connectString);
+    } catch (error) {
+      logger.error(error);
+      this.interruptGame(game.id, 'failed to configure server');
+    }
   }
 
   public async activeGameForPlayer(playerId: string): Promise<IGame> {
