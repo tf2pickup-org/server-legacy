@@ -269,6 +269,7 @@ export class Queue {
 
     const server = await this.gameServerController.findFirstFreeGameServer();
     if (server) {
+      await this.gameController.resolveMumbleUrl(game, server);
       await this.gameServerController.assignGame(server, game);
       logger.info(`game ${game.id} will be played on ${server.name}`);
       await this.gameController.launch(this.config, game, server);

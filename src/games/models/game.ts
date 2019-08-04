@@ -12,6 +12,7 @@ export interface IGame extends Document {
   map: string;
   state: GameState;
   connectString: string;
+  mumbleUrl: string;
   logsUrl?: string;
   demoUrl?: string;
   error?: string;
@@ -29,7 +30,8 @@ const gameSchema: Schema = new Schema({
   slots: { type: [Schema.Types.Mixed], required: true },
   map: { type: Schema.Types.String, required: true },
   state: { type: Schema.Types.String, required: true },
-  connectString: { type: Schema.Types.String },
+  connectString: Schema.Types.String,
+  mumbleUrl: Schema.Types.String,
   logsUrl: Schema.Types.String,
   demoUrl: Schema.Types.String,
   error: Schema.Types.String,

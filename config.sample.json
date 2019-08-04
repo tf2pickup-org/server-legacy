@@ -21,5 +21,9 @@
     "port": 9871
   },
   "queueConfig": "6v6",
-  "requireEtf2lAccount": false
+  "requireEtf2lAccount": false,
+  "mumble": {
+    "serverUrl": "melkor.tf",
+    "channel": "tf2pickup"
+  }
 }

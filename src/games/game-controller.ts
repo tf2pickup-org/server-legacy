@@ -1,4 +1,5 @@
 import { inject, injectable } from 'inversify';
+import { config } from '../config';
 import { container } from '../container';
 import { GameServerController } from '../game-servers/game-server-controller';
 import { IGameServer } from '../game-servers/models/game-server';
@@ -119,10 +120,18 @@ export class GameController {
     this.ioProvider.io.emit('game updated', game);
   }
 
+  public async resolveMumbleUrl(game: IGame, server: IGameServer) {
+    const mumbleUrl = `mumble://${config.mumble.serverUrl}/${config.mumble.channel}/${server.mumbleChannelName}`;
+    game.mumbleUrl = mumbleUrl;
+    await game.save();
+
+    this.ioProvider.io.emit('game updated', game);
+  }
+
   private async updateConnectString(gameId: string, connectString: string) {
     const game = await Game.findById(gameId);
     game.connectString = connectString;
-    game.save();
+    await game.save();
 
     this.ioProvider.io.emit('game updated', game);
   }
