@@ -8,7 +8,7 @@ export interface IPlayerSkill extends Document {
 }
 
 const playerSkillSchema: Schema = new Schema({
-  skill: { type: Map, of: String },
+  skill: { type: Map, of: Number },
   player: { type: Schema.Types.ObjectId, ref: 'Player' },
 }, {
   toJSON: { versionKey: false, transform: renameId },
