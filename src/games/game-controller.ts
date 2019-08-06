@@ -22,7 +22,7 @@ async function queueSlotToPlayerSlot(queueSlot: QueueSlot): Promise<PlayerSlot> 
   const skill = await PlayerSkill.findOne({ player }).lean();
   if (skill) {
     logger.debug(`skill for player ${player.name}: ${skill.skill[gameClass]}`);
-    return { playerId, gameClass, skill: parseInt(skill.skill[gameClass], 10) };
+    return { playerId, gameClass, skill: skill.skill[gameClass] };
   } else {
     logger.debug(`no skill for player ${player.name}!`);
     return { playerId, gameClass, skill: 1 };
