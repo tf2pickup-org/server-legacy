@@ -105,7 +105,7 @@ export class GameServerController {
 
         const cmd = [
           `sm_game_player_add ${player.steamId}`,
-          `-name ${player.name}`,
+          `-name "${player.name}"`,
           `-team ${team}`,
           `-class ${slot.gameClass}`,
         ].join(' ');
