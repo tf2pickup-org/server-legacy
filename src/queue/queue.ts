@@ -185,8 +185,6 @@ export class Queue {
             done({ error: error.message });
           }
         });
-      } else {
-        logger.info('user not logged in');
       }
     });
   }
