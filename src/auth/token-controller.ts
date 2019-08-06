@@ -10,7 +10,7 @@ export class TokenController {
   private readonly commonTokenOptions: SignOptions = { algorithm: 'ES512' };
   private readonly authTokenOptions: SignOptions = { ...this.commonTokenOptions, expiresIn: '15m' };
   private readonly refreshTokenOptions: SignOptions = { ...this.commonTokenOptions, expiresIn: '7d' };
-  private readonly wsTokenOptions: SignOptions = { algorithm: 'HS256', expiresIn: '1h' };
+  private readonly wsTokenOptions: SignOptions = { algorithm: 'HS256', expiresIn: '10m' };
 
   constructor(
     @inject(KeyStore) private keyStore: KeyStore,
