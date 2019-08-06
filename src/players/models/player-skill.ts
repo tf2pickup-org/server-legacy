@@ -4,7 +4,7 @@ import { IPlayer } from './player';
 
 export interface IPlayerSkill extends Document {
   skill: { [gameClass: string]: number };
-  player?: IPlayer;
+  player?: IPlayer | string;
 }
 
 const playerSkillSchema: Schema = new Schema({
