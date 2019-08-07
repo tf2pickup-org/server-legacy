@@ -1,45 +1,46 @@
-import { inject, injectable } from 'inversify';
-import { config } from '../config';
-import { container } from '../container';
-import { GameServerController } from '../game-servers/game-server-controller';
-import { GameController } from '../games';
-import { IoProvider } from '../io-provider';
-import logger from '../logger';
-import { Player } from '../players/models/player';
-import { QueueConfig } from './models/queue-config';
-import { QueueSlot } from './models/queue-slot';
-import { QueueState } from './models/queue-state';
-import { queueConfigs } from './queue-configs';
+import { inject, LazyServiceIdentifer } from 'inversify';
+import { provide } from 'inversify-binding-decorators';
+import { Config } from '../../config';
+import { WsProviderService } from '../../core';
+import { GameService } from '../../games/services/game-service';
+import logger from '../../logger';
+import { PlayerService } from '../../players/services/player-service';
+import { QueueConfig } from '../models/queue-config';
+import { QueueSlot } from '../models/queue-slot';
+import { QueueState } from '../models/queue-state';
+import { queueConfigs } from '../queue-configs';
 
-@injectable()
-export class Queue {
+@provide(QueueService)
+export class QueueService {
 
-  public config: QueueConfig = queueConfigs[config.queueConfig];
+  public config: QueueConfig;
   public slots: QueueSlot[] = [];
   public state: QueueState = 'waiting';
   public map: string;
   private timer: NodeJS.Timeout;
+  private ws = this.wsProvider.ws;
 
-  get requiredPlayerCount() {
+  public get requiredPlayerCount() {
     return this.config.classes.reduce((prev, curr) => prev + curr.count, 0) * this.config.teamCount;
   }
 
-  get playerCount() {
+  public get playerCount() {
     return this.slots.reduce((prev, curr) => curr.playerId ? prev + 1 : prev, 0);
   }
 
-  get readyPlayerCount() {
+  public get readyPlayerCount() {
     return this.slots.reduce((prev, curr) => curr.playerReady ? prev + 1 : prev, 0);
   }
 
   constructor(
-    @inject(IoProvider) private ioProvider: IoProvider,
-    @inject(GameController) private gameController: GameController,
-    @inject(GameServerController) private gameServerController: GameServerController,
+    @inject('config') config: Config,
+    @inject(WsProviderService) private wsProvider: WsProviderService,
+    @inject(PlayerService) private playerService: PlayerService,
+    @inject(new LazyServiceIdentifer(() => GameService)) private gameService: GameService,
   ) {
     logger.info(`queue config: ${config.queueConfig}`);
+    this.config = queueConfigs[config.queueConfig];
     this.reset();
-    this.setupIo();
   }
 
   /**
@@ -47,9 +48,9 @@ export class Queue {
    */
   public reset() {
     this.resetSlots();
-    this.ioProvider.io.emit('queue slots reset', this.slots);
+    this.ws.emit('queue slots reset', this.slots);
     this.randomizeMap();
-    this.ioProvider.io.emit('queue map updated', this.map);
+    this.ws.emit('queue map updated', this.map);
     this.updateState();
   }
 
@@ -59,12 +60,12 @@ export class Queue {
    * @param playerId The player to take the slot.
    */
   public async join(slotId: number, playerId: string, sender?: SocketIO.Socket): Promise<QueueSlot> {
-    const player = await Player.findById(playerId);
+    const player = await this.playerService.getPlayerById(playerId);
     if (!player) {
       throw new Error('no such player');
     }
 
-    if (!!(await this.gameController.activeGameForPlayer(playerId))) {
+    if (!!(await this.gameService.activeGameForPlayer(playerId))) {
       throw new Error('player involved in a currently active game');
     }
 
@@ -125,7 +126,7 @@ export class Queue {
 
     const slot = this.slots.find(s => s.playerId === playerId);
     if (slot) {
-      const player = await Player.findById(playerId);
+      const player = await this.playerService.getPlayerById(playerId);
       slot.playerReady = true;
       logger.info(`player "${player.name}" ready`);
       this.slotUpdated(slot, sender);
@@ -148,45 +149,9 @@ export class Queue {
     }, []);
   }
 
-  private setupIo() {
-    this.ioProvider.io.on('connection', socket => {
-      if (socket.request.user.logged_in) {
-        const player = socket.request.user;
-
-        socket.on('disconnect', () => {
-          try {
-            this.leave(player.id);
-          } catch (error) { }
-        });
-
-        socket.on('join queue', async (slotId: number, done) => {
-          try {
-            const slot = await this.join(slotId, player.id, socket);
-            done({ value: slot });
-          } catch (error) {
-            done({ error: error.message });
-          }
-        });
-
-        socket.on('leave queue', done => {
-          try {
-            const slot = this.leave(player.id, socket);
-            done({ value: slot });
-          } catch (error) {
-            done({ error: error.message });
-          }
-        });
-
-        socket.on('player ready', async done => {
-          try {
-            const slot = await this.ready(player.id, socket);
-            done({ value: slot });
-          } catch (error) {
-            done({ error: error.message });
-          }
-        });
-      }
-    });
+  private randomizeMap() {
+    const mapPool = this.config.maps.filter(map => map !== this.map);
+    this.map = mapPool[Math.floor(Math.random() * mapPool.length)];
   }
 
   private updateState() {
@@ -216,7 +181,7 @@ export class Queue {
       logger.info(`queue state change (${this.state} => ${state})`);
       this.onStateChange(this.state, state);
       this.state = state;
-      this.ioProvider.io.emit('queue state update', state);
+      this.ws.emit('queue state update', state);
     }
   }
 
@@ -230,15 +195,6 @@ export class Queue {
       delete this.timer;
     } else if (oldState === 'ready' && newState === 'waiting') {
       this.cleanupQueue();
-    }
-  }
-
-  private slotUpdated(slot: QueueSlot, sender?: SocketIO.Socket) {
-    if (sender) {
-      // broadcast event to everyone except the sender
-      sender.broadcast.emit('queue slot update', slot);
-    } else {
-      this.ioProvider.io.emit('queue slot update', slot);
     }
   }
 
@@ -262,28 +218,17 @@ export class Queue {
   }
 
   private async launch() {
-    const game = await this.gameController.create(this.slots, this.config, this.map);
-    logger.info(`game ${game.id} created`);
-
-    const server = await this.gameServerController.findFirstFreeGameServer();
-    if (server) {
-      await this.gameController.resolveMumbleUrl(game, server);
-      await this.gameServerController.assignGame(server, game);
-      logger.info(`game ${game.id} will be played on ${server.name}`);
-      await this.gameController.launch(this.config, game, server);
-    } else {
-      logger.error('no servers available!');
-      await this.gameController.interruptGame(game.id, 'no servers available');
-    }
-
+    await this.gameService.create(this.slots, this.config, this.map);
     setTimeout(() => this.reset(), 0);
   }
 
-  private randomizeMap() {
-    const mapPool = this.config.maps.filter(map => map !== this.map);
-    this.map = mapPool[Math.floor(Math.random() * mapPool.length)];
+  private slotUpdated(slot: QueueSlot, sender?: SocketIO.Socket) {
+    if (sender) {
+      // broadcast event to everyone except the sender
+      sender.broadcast.emit('queue slot update', slot);
+    } else {
+      this.ws.emit('queue slot update', slot);
+    }
   }
 
 }
-
-container.bind(Queue).toSelf();

@@ -1,35 +1,35 @@
-import { inject, injectable } from 'inversify';
+import { inject } from 'inversify';
+import { provide } from 'inversify-binding-decorators';
 import socketio from 'socket.io';
 import { authenticate } from 'socketio-jwt-auth';
-import { KeyStore } from './auth';
-import { container } from './container';
+import { KeyStore } from '../../auth';
+import logger from '../../logger';
+import { Player } from '../../players/models/player';
 import { ExpressAppProvider } from './express-app-provider';
-import logger from './logger';
-import { Player } from './players/models/player';
 
-@injectable()
-export class IoProvider {
+@provide(WsProviderService)
+export class WsProviderService {
 
-  public io: SocketIO.Server;
+  public ws: SocketIO.Server;
 
   constructor(
     @inject(ExpressAppProvider) private expressAppProvider: ExpressAppProvider,
     @inject(KeyStore) private keyStore: KeyStore,
   ) {
-    this.io = socketio(this.expressAppProvider.server);
+    this.ws = socketio(this.expressAppProvider.server);
     this.initializeAuth();
     logger.debug('io ready');
   }
 
   private initializeAuth() {
-    this.io.use(authenticate({
+    this.ws.use(authenticate({
       secret: this.keyStore.getKey('ws', 'verify') as string,
       succeedWithoutToken: true,
     }, async (payload: { id?: any }, done) => {
       logger.debug(`verifying`);
       if (payload && payload.id) {
         try {
-          const player = await Player.findOne({ _id: payload.id });
+          const player = await Player.findById(payload.id);
           if (player) {
             return done(null, player);
           } else {
@@ -43,7 +43,7 @@ export class IoProvider {
       }
     }));
 
-    this.io.on('connection', socket => {
+    this.ws.on('connection', socket => {
       if (socket.request.user.logged_in) {
         const userName = socket.request.user.name;
         logger.debug(`WS connection (${userName})`);
@@ -54,5 +54,3 @@ export class IoProvider {
   }
 
 }
-
-container.bind(IoProvider).toSelf();

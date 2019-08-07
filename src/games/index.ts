@@ -1,3 +1,3 @@
-export { GameController } from './game-controller';
-export { default as routes } from './routes';
+export * from './controllers';
+export * from './services';
 export * from './models';

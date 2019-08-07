@@ -11,7 +11,7 @@ import { Player } from '../players/models/player';
 import { QueueConfig } from '../queue/models/queue-config';
 import { isServerOnline } from './is-server-online';
 import { GameServer, GameServerAssignment, IGameServer, ServerInfoForPlayer } from './models';
-import { verifyServer } from './verify-server';
+import { verifyServer } from './utils/verify-server';
 
 const resolve = promisify(resolveCb);
 

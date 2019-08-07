@@ -27,6 +27,11 @@ export interface Config {
     port: number;
   };
 
+  mumble: {
+    serverUrl: string;
+    channel: string;
+  };
+
   queueConfig: string;
   requireEtf2lAccount: boolean;
 }

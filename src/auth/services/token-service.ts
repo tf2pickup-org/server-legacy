@@ -1,11 +1,11 @@
-import { inject, injectable } from 'inversify';
+import { inject } from 'inversify';
+import { provide } from 'inversify-binding-decorators';
 import { sign, SignOptions, verify } from 'jsonwebtoken';
-import { container } from '../container';
+import { RefreshToken } from '../models/refresh-token';
 import { KeyStore } from './key-store';
-import { RefreshToken } from './models/refresh-token';
 
-@injectable()
-export class TokenController {
+@provide(TokenService)
+export class TokenService {
 
   private readonly commonTokenOptions: SignOptions = { algorithm: 'ES512' };
   private readonly authTokenOptions: SignOptions = { ...this.commonTokenOptions, expiresIn: '15m' };
@@ -58,5 +58,3 @@ export class TokenController {
   }
 
 }
-
-container.bind(TokenController).toSelf();

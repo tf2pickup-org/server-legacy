@@ -1,10 +1,10 @@
 import { createPrivateKey, createPublicKey, generateKeyPairSync, KeyObject } from 'crypto';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { generate } from 'generate-password';
-import { inject, injectable } from 'inversify';
-import { Config } from '../config';
-import { container } from '../container';
-import logger from '../logger';
+import { inject } from 'inversify';
+import { provide } from 'inversify-binding-decorators';
+import { Config } from '../../config';
+import logger from '../../logger';
 
 interface KeyPair {
   privateKey: KeyObject;
@@ -13,7 +13,7 @@ interface KeyPair {
 
 type KeyName = 'auth' | 'refresh' | 'ws';
 
-@injectable()
+@provide(KeyStore)
 export class KeyStore {
 
   private keys = new Map<KeyName, KeyPair>();
@@ -74,7 +74,7 @@ export class KeyStore {
       }
 
       writeFileSync(this.config.keyStoreFile, JSON.stringify(data), 'utf-8');
-      console.info('created new keys');
+      logger.info('created new keys');
     } else {
       const data = JSON.parse(readFileSync(this.config.keyStoreFile, 'utf-8'));
       Object.keys(data).forEach(key => {
@@ -93,7 +93,7 @@ export class KeyStore {
         this.keys.set(key as KeyName, { privateKey, publicKey });
       });
 
-      console.info('keys imported successfully');
+      logger.info('keys imported successfully');
     }
 
     const wsSecret = generate({ length: 32, numbers: true, uppercase: true });
@@ -101,5 +101,3 @@ export class KeyStore {
   }
 
 }
-
-container.bind(KeyStore).toSelf();

@@ -1,5 +1,4 @@
-import logger from '../logger';
-import { GamePlayer } from './models';
+import { GamePlayer } from '../models';
 
 export interface PlayerSlot {
   playerId: string;
@@ -15,8 +14,6 @@ export function pickTeams(players: PlayerSlot[], gameClasses: string[]): GamePla
     gameClass: string,
     allClassCombinations: Array<{ [teamId: number]: PlayerSlot[] }>,
   }> = [];
-
-  logger.debug(`[pickTeams()] ${JSON.stringify(players)}`);
 
   for (const gameClass of gameClasses) {
     const ofGameClass = players.filter(p => p.gameClass === gameClass);
@@ -92,7 +89,6 @@ export function pickTeams(players: PlayerSlot[], gameClasses: string[]): GamePla
 
   allCombinations.sort((a, b) => a.skillDifference - b.skillDifference);
   const selected = allCombinations[0];
-  logger.debug(`team average skill difference = ${selected.skillDifference}`);
 
   return Object.keys(selected)
     .map(key => {

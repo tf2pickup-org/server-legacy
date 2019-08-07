@@ -1,6 +1,12 @@
 import { Document, model, Schema } from 'mongoose';
 import { renameId } from '../../utils';
 
+function removeRcon(doc: Document, ret: any) {
+  ret = renameId(doc, ret);
+  delete ret.rconPassword;
+  return ret;
+}
+
 export interface IGameServer extends Document {
   createdAt: Date;
   name: string;
@@ -22,7 +28,7 @@ const gameServerSchema: Schema = new Schema({
   resolvedIpAddresses: [Schema.Types.String],
   mumbleChannelName: Schema.Types.String,
 }, {
-  toJSON: { versionKey: false, transform: renameId },
+  toJSON: { versionKey: false, transform: removeRcon },
 });
 
 gameServerSchema.pre('save', async function(next) {

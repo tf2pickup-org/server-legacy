@@ -1,6 +1,6 @@
 import { inject, injectable } from 'inversify';
 import { container } from '../container';
-import { GameController, IGame } from '../games';
+import { GameService, IGame } from '../games';
 import logger from '../logger';
 import { GameEventListener, GameEventSource } from './game-event-listener';
 import { GameServerController } from './game-server-controller';
@@ -12,7 +12,7 @@ export class GameEventHandler {
   private gameEventListener = new GameEventListener();
 
   constructor(
-    @inject(GameController) private gameController: GameController,
+    @inject(GameService) private gameService: GameService,
     @inject(GameServerController) private gameServerController: GameServerController,
   ) { }
 
@@ -21,7 +21,7 @@ export class GameEventHandler {
       try {
         const server = await this.getSourceServer(source);
         const game = await this.getAssignedGame(server);
-        await this.gameController.onMatchStarted(game);
+        await this.gameService.onMatchStarted(game);
       } catch (error) {
         logger.error(error.message);
       }
@@ -31,7 +31,7 @@ export class GameEventHandler {
       try {
         const server = await this.getSourceServer(source);
         const game = await this.getAssignedGame(server);
-        await this.gameController.onMatchEnded(game);
+        await this.gameService.onMatchEnded(game);
 
         setTimeout(async () => {
           try {
@@ -49,7 +49,7 @@ export class GameEventHandler {
       try {
         const server = await this.getSourceServer(source);
         const game = await this.getAssignedGame(server);
-        await this.gameController.onLogsUploaded(game, logsUrl);
+        await this.gameService.onLogsUploaded(game, logsUrl);
       } catch (error) {
         logger.error(error.message);
       }
