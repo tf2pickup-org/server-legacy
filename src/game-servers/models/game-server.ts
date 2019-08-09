@@ -22,7 +22,7 @@ function removeRcon(doc: Document, ret: any) {
   next();
 })
 export class GameServer extends Typegoose {
-  @prop({ default: new Date() })
+  @prop({ default: () => new Date() })
   public createdAt?: Date;
 
   @prop({ required: true, trim: true })

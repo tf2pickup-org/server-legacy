@@ -3,7 +3,7 @@ import { Game } from '../../games';
 import { GameServer } from './game-server';
 
 export class GameServerAssignment extends Typegoose {
-  @prop({ default: new Date() })
+  @prop({ default: () => new Date() })
   public assignedAt?: Date;
 
   @prop({ ref: GameServer, required: true })

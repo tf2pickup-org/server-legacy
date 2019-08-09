@@ -12,7 +12,7 @@ export class Player extends Typegoose {
   @prop({ required: true, unique: true })
   public steamId!: string;
 
-  @prop({ default: new Date() })
+  @prop({ default: () => new Date() })
   public joinedAt?: Date;
 
   @prop()

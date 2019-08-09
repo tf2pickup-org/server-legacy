@@ -9,6 +9,7 @@ import { GameState } from './game-state';
   if (!this.number) {
     const latestGame = await gameModel.findOne({}, {}, { sort: { launchedAt: -1 }});
     if (latestGame) {
+      console.log(`latestGame number = ${latestGame.number}`);
       this.number = latestGame.number + 1;
     } else {
       this.number = 1;
@@ -18,7 +19,7 @@ import { GameState } from './game-state';
   next();
 })
 export class Game extends Typegoose {
-  @prop({ default: new Date() })
+  @prop({ default: () => new Date() })
   public launchedAt?: Date;
 
   @prop({ unique: true })
