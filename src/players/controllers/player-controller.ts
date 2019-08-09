@@ -3,7 +3,7 @@ import { inject } from 'inversify';
 import { controller, httpGet, httpPatch, httpPost, httpPut, requestBody, requestParam,
   response } from 'inversify-express-utils';
 import { ensureAuthenticated, ensureRole } from '../../auth';
-import { playerModel } from '../models/player';
+import { Player, playerModel } from '../models/player';
 import { PlayerBan, playerBanModel } from '../models/player-ban';
 import { PlayerSkill, playerSkillModel } from '../models/player-skill';
 import { PlayerBansService, PlayerService, PlayerSkillService } from '../services';
@@ -38,12 +38,12 @@ export class PlayerController {
   }
 
   @httpPatch('/:id', ensureAuthenticated, ensureRole('admin', 'super-user'))
-  public async savePlayer(@requestParam('id') playerId: string, @requestBody() body: any,
+  public async savePlayer(@requestParam('id') playerId: string, @requestBody() body: Partial<Player>,
                           @response() res: Response) {
     try {
       const player = await playerModel.findById(playerId);
       if (player) {
-        Object.keys(body).forEach(key => player[key] = body[key]);
+        player.name = body.name;
         await player.save();
         return res.status(200).send(player.toJSON());
       } else {
@@ -75,7 +75,7 @@ export class PlayerController {
   }
 
   @httpPut('/:id/skill', ensureAuthenticated, ensureRole('admin', 'super-user'))
-  public async setPlayerSkill(@requestParam('id') playerId: string, @requestBody() playerSkill: Partial<PlayerSkill>,
+  public async setPlayerSkill(@requestParam('id') playerId: string, @requestBody() playerSkill: PlayerSkill,
                               @response() res: Response) {
     try {
       const skill = await playerSkillModel.findOne({ player: playerId });

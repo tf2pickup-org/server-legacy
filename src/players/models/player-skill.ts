@@ -1,4 +1,5 @@
 import { mapProp, prop, Ref, Typegoose } from 'typegoose';
+import { renameId } from '../../utils';
 import { Player } from './player';
 
 export class PlayerSkill extends Typegoose {
@@ -11,4 +12,12 @@ export class PlayerSkill extends Typegoose {
 
 }
 
-export const playerSkillModel = new PlayerSkill().getModelForClass(PlayerSkill);
+export const playerSkillModel = new PlayerSkill().getModelForClass(PlayerSkill, {
+  schemaOptions: {
+    toJSON: {
+      versionKey: false,
+      virtuals: true,
+      transform: renameId,
+    },
+  },
+});
