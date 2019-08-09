@@ -21,9 +21,11 @@ export class AuthController {
 
   @httpGet('/steam/return', passport.authenticate('steam', {
     session: false,
-    failureRedirect: `${config.clientUrl}/auth-error` }),
-  )
+  }))
   public authSteamCallback(req: Request, res: Response) {
+    // todo
+    // Handle login error. Right now user is redirected to an empty page displaying only the error message.
+    // This should be handled in a better way.
     const user = req.user;
     const refreshToken = this.tokenService.generateToken('refresh', user.id);
     const authToken = this.tokenService.generateToken('auth', user.id);
