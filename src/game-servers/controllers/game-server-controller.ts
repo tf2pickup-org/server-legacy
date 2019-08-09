@@ -4,7 +4,7 @@ import { controller, httpDelete, httpGet, httpPost, requestBody, requestParam,
     response } from 'inversify-express-utils';
 import { ensureAuthenticated, ensureRole } from '../../auth';
 import logger from '../../logger';
-import { IGameServer } from '../models';
+import { GameServer } from '../models';
 import { GameServerService } from '../services';
 
 @controller('/game-servers')
@@ -35,7 +35,7 @@ export class GameServerController {
   }
 
   @httpPost('/', ensureAuthenticated, ensureRole('super-user'))
-  public async addGameServer(@requestBody() gameServer: Partial<IGameServer>, @response() res: Response) {
+  public async addGameServer(@requestBody() gameServer: GameServer, @response() res: Response) {
     if (!gameServer) {
       return res.status(400).send({ message: 'invalid game server' });
     }

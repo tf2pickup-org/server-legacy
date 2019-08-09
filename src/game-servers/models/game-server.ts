@@ -1,4 +1,5 @@
-import { Document, model, Schema } from 'mongoose';
+import { Document } from 'mongoose';
+import { arrayProp, pre, prop, Typegoose } from 'typegoose';
 import { renameId } from '../../utils';
 
 function removeRcon(doc: Document, ret: any) {
@@ -7,48 +8,51 @@ function removeRcon(doc: Document, ret: any) {
   return ret;
 }
 
-export interface IGameServer extends Document {
-  createdAt: Date;
-  name: string;
-  address: string;
-  port: number;
-  rconPassword: string;
-  isOnline?: boolean;
-  resolvedIpAddresses: string[];
-  mumbleChannelName: string;
-}
-
-const gameServerSchema: Schema = new Schema({
-  createdAt: Schema.Types.Date,
-  name: { type: Schema.Types.String, required: true },
-  address: { type: Schema.Types.String, required: true },
-  port: { type: Schema.Types.Number, required: true },
-  rconPassword: { type: Schema.Types.String, required: true },
-  isOnline: Schema.Types.Boolean,
-  resolvedIpAddresses: [Schema.Types.String],
-  mumbleChannelName: Schema.Types.String,
-}, {
-  toJSON: { versionKey: false, transform: removeRcon },
-});
-
-gameServerSchema.pre('save', async function(next) {
-  const self = this as IGameServer;
-  if (!self.createdAt) {
-    self.createdAt = new Date();
-  }
-
-  if (!self.mumbleChannelName) {
-    const latestServer = await gameServerDb.findOne({}, {}, { sort: { createdAt: -1 }});
+@pre<GameServer>('save', async function(next) {
+  if (!this.mumbleChannelName) {
+    const latestServer = await gameServerModel.findOne({}, {}, { sort: { createdAt: -1 }});
     if (latestServer) {
       const id = parseInt(latestServer.mumbleChannelName, 10) + 1;
-      self.mumbleChannelName = `${id}`;
+      this.mumbleChannelName = `${id}`;
     } else {
-      self.mumbleChannelName = '1';
+      this.mumbleChannelName = '1';
     }
   }
 
   next();
-});
+})
+export class GameServer extends Typegoose {
+  @prop({ default: new Date() })
+  public createdAt?: Date;
 
-const gameServerDb = model<IGameServer>('GameServer', gameServerSchema);
-export { gameServerDb as GameServer };
+  @prop({ required: true, trim: true })
+  public name!: string;
+
+  @prop({ required: true, trim: true })
+  public address!: string;
+
+  @prop({ required: true })
+  public port: number;
+
+  @prop({ required: true })
+  public rconPassword!: string;
+
+  @prop()
+  public isOnline?: boolean;
+
+  @arrayProp({ items: String })
+  public resolvedIpAddresses?: string[];
+
+  @prop()
+  public mumbleChannelName?: string;
+}
+
+export const gameServerModel = new GameServer().getModelForClass(GameServer, {
+  schemaOptions: {
+    toJSON: {
+      versionKey: false,
+      virtuals: true,
+      transform: removeRcon,
+    },
+  },
+});

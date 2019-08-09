@@ -4,7 +4,7 @@ import socketio from 'socket.io';
 import { authenticate } from 'socketio-jwt-auth';
 import { KeyStore } from '../../auth';
 import logger from '../../logger';
-import { Player } from '../../players/models/player';
+import { playerModel } from '../../players/models/player';
 import { ExpressAppProvider } from './express-app-provider';
 
 @provide(WsProviderService)
@@ -29,7 +29,7 @@ export class WsProviderService {
       logger.debug(`verifying`);
       if (payload && payload.id) {
         try {
-          const player = await Player.findById(payload.id);
+          const player = await playerModel.findById(payload.id);
           if (player) {
             return done(null, player);
           } else {

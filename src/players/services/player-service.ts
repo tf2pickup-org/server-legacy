@@ -1,25 +1,12 @@
 import { provide } from 'inversify-binding-decorators';
-import { Types } from 'mongoose';
-import { Game, IGame } from '../../games/models';
-import { IPlayer, Player } from '../models/player';
+import { InstanceType } from 'typegoose';
+import { Game, gameModel } from '../../games/models';
 
 @provide(PlayerService)
 export class PlayerService {
 
-  public async getPlayerById(playerId: string): Promise<IPlayer> {
-    if (!Types.ObjectId.isValid(playerId)) {
-      throw new Error('invalid id');
-    }
-
-    return await Player.findById(playerId);
-  }
-
-  public async getPlayerGames(playerId: string): Promise<IGame[]> {
-    if (!Types.ObjectId.isValid(playerId)) {
-      throw new Error('invalid id');
-    }
-
-    return await Game.find({ players: playerId }).sort({ launchedAt: -1 });
+  public async getPlayerGames(playerId: string): Promise<Array<InstanceType<Game>>> {
+    return await gameModel.find({ players: playerId }).sort({ launchedAt: -1 });
   }
 
 }

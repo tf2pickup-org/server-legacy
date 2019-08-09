@@ -1,19 +1,16 @@
-import { inject, LazyServiceIdentifer } from 'inversify';
+import { inject } from 'inversify';
 import { provide } from 'inversify-binding-decorators';
-import { Config } from '../../config';
 import { WsProviderService } from '../../core';
 import { GameService } from '../../games/services/game-service';
 import logger from '../../logger';
-import { PlayerService } from '../../players/services/player-service';
-import { QueueConfig } from '../models/queue-config';
+import { playerModel } from '../../players/models/player';
 import { QueueSlot } from '../models/queue-slot';
 import { QueueState } from '../models/queue-state';
-import { queueConfigs } from '../queue-configs';
+import { QueueConfigService } from './queue-config-service';
 
 @provide(QueueService)
 export class QueueService {
 
-  public config: QueueConfig;
   public slots: QueueSlot[] = [];
   public state: QueueState = 'waiting';
   public map: string;
@@ -21,7 +18,8 @@ export class QueueService {
   private ws = this.wsProvider.ws;
 
   public get requiredPlayerCount() {
-    return this.config.classes.reduce((prev, curr) => prev + curr.count, 0) * this.config.teamCount;
+    return this.queueConfigService.queueConfig.classes
+      .reduce((prev, curr) => prev + curr.count, 0) * this.queueConfigService.queueConfig.teamCount;
   }
 
   public get playerCount() {
@@ -33,13 +31,10 @@ export class QueueService {
   }
 
   constructor(
-    @inject('config') config: Config,
     @inject(WsProviderService) private wsProvider: WsProviderService,
-    @inject(PlayerService) private playerService: PlayerService,
-    @inject(new LazyServiceIdentifer(() => GameService)) private gameService: GameService,
+    @inject(GameService) private gameService: GameService,
+    @inject(QueueConfigService) private queueConfigService: QueueConfigService,
   ) {
-    logger.info(`queue config: ${config.queueConfig}`);
-    this.config = queueConfigs[config.queueConfig];
     this.reset();
   }
 
@@ -60,7 +55,7 @@ export class QueueService {
    * @param playerId The player to take the slot.
    */
   public async join(slotId: number, playerId: string, sender?: SocketIO.Socket): Promise<QueueSlot> {
-    const player = await this.playerService.getPlayerById(playerId);
+    const player = await playerModel.findById(playerId);
     if (!player) {
       throw new Error('no such player');
     }
@@ -126,7 +121,7 @@ export class QueueService {
 
     const slot = this.slots.find(s => s.playerId === playerId);
     if (slot) {
-      const player = await this.playerService.getPlayerById(playerId);
+      const player = await playerModel.findById(playerId);
       slot.playerReady = true;
       logger.info(`player "${player.name}" ready`);
       this.slotUpdated(slot, sender);
@@ -139,9 +134,9 @@ export class QueueService {
 
   private resetSlots() {
     let lastId = 0;
-    this.slots = this.config.classes.reduce((prev, curr) => {
+    this.slots = this.queueConfigService.queueConfig.classes.reduce((prev, curr) => {
       const tmpSlots = [];
-      for (let i = 0; i < curr.count * this.config.teamCount; ++i) {
+      for (let i = 0; i < curr.count * this.queueConfigService.queueConfig.teamCount; ++i) {
         tmpSlots.push({ id: lastId++, gameClass: curr.name, playerReady: false });
       }
 
@@ -150,7 +145,7 @@ export class QueueService {
   }
 
   private randomizeMap() {
-    const mapPool = this.config.maps.filter(map => map !== this.map);
+    const mapPool = this.queueConfigService.queueConfig.maps.filter(map => map !== this.map);
     this.map = mapPool[Math.floor(Math.random() * mapPool.length)];
   }
 
@@ -187,7 +182,7 @@ export class QueueService {
 
   private onStateChange(oldState: QueueState, newState: QueueState) {
     if (oldState === 'waiting' && newState === 'ready') {
-      this.timer = setTimeout(() => this.readyUpTimeout(), this.config.readyUpTimeout);
+      this.timer = setTimeout(() => this.readyUpTimeout(), this.queueConfigService.queueConfig.readyUpTimeout);
     } else if (oldState === 'ready' && newState === 'launching') {
       delete this.timer;
       this.launch();
@@ -218,7 +213,7 @@ export class QueueService {
   }
 
   private async launch() {
-    await this.gameService.create(this.slots, this.config, this.map);
+    await this.gameService.create(this.slots, this.queueConfigService.queueConfig, this.map);
     setTimeout(() => this.reset(), 0);
   }
 

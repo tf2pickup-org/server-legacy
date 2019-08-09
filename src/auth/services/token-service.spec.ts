@@ -8,8 +8,6 @@ import { RefreshToken } from '../models/refresh-token';
 import { KeyStore } from './key-store';
 import { TokenService } from './token-service';
 
-container.load(buildProviderModule());
-
 class KeyStoreStub {
   public authKey = generateKeyPairSync('ec', {
     namedCurve: 'secp521r1',
@@ -50,6 +48,8 @@ describe('TokenService', () => {
   let service: TokenService;
 
   beforeAll(async () => {
+    container.load(buildProviderModule());
+
     mongod = new MongoMemoryServer();
     const uri = await mongod.getConnectionString();
     await connect(uri, { useNewUrlParser: true });

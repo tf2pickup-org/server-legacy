@@ -1,9 +1,9 @@
 import { Rcon } from 'rcon-client';
 import { config } from '../../config';
-import { IGameServer } from '../../game-servers/models';
+import { GameServer } from '../../game-servers/models';
 import logger from '../../logger';
 
-export async function cleanupServer(server: IGameServer) {
+export async function cleanupServer(server: GameServer) {
   try {
     const rcon = new Rcon({ packetResponseTimeout: 30000 });
     await rcon.connect({

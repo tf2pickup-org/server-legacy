@@ -1,15 +1,15 @@
 import { generate } from 'generate-password';
 import { Rcon } from 'rcon-client';
 import { config } from '../../config';
-import { IGameServer, ServerInfoForPlayer } from '../../game-servers/models';
+import { GameServer, ServerInfoForPlayer } from '../../game-servers/models';
 import logger from '../../logger';
 import { PlayerService } from '../../players';
-import { IGame } from '../models';
+import { Player, playerModel } from '../../players/models/player';
+import { Game } from '../models';
 
-export async function configureServer(server: IGameServer,
-                                      game: IGame,
-                                      execConfigs: string[],
-                                      playerService: PlayerService): Promise<ServerInfoForPlayer> {
+export async function configureServer(server: GameServer,
+                                      game: Game,
+                                      execConfigs: string[]): Promise<ServerInfoForPlayer> {
   logger.info(`configuring server ${server.name}...`);
   logger.debug(`[${server.name}] using rcon password ${server.rconPassword}`);
 
@@ -40,7 +40,7 @@ export async function configureServer(server: IGameServer,
     await rcon.send(`sv_password ${password}`);
 
     for (const slot of game.slots) {
-      const player = await playerService.getPlayerById(slot.playerId);
+      const player = await playerModel.findById(slot.playerId).lean() as Player;
       const team = parseInt(slot.teamId, 10) + 2;
 
       const cmd = [

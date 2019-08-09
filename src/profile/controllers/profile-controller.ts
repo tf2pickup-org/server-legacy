@@ -17,7 +17,7 @@ export class ProfileController {
   public async getProfile(@request() req: Request, @response() res: Response) {
     const activeGame = await this.gameService.activeGameForPlayer(req.user.id);
     return res.status(200).send({
-      ...req.user,
+      ...req.user.toJSON(),
       activeGameId: activeGame ? activeGame.id : null,
     });
   }

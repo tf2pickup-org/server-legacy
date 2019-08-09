@@ -1,10 +1,10 @@
 import { resolve as resolveCb } from 'dns';
 import { provide } from 'inversify-binding-decorators';
-import { Types } from 'mongoose';
+import { InstanceType } from 'typegoose';
 import { promisify } from 'util';
-import { IGame } from '../../games/models';
+import { Game } from '../../games/models';
 import logger from '../../logger';
-import { GameServer, GameServerAssignment, IGameServer } from '../models';
+import { GameServer, gameServerAssignmentModel, gameServerModel } from '../models';
 import { verifyServer } from '../utils/verify-server';
 
 const resolve = promisify(resolveCb);
@@ -12,32 +12,16 @@ const resolve = promisify(resolveCb);
 @provide(GameServerService)
 export class GameServerService {
 
-  public async getAllGameServers(): Promise<IGameServer[]> {
-    return await GameServer.find();
+  public async getAllGameServers(): Promise<Array<InstanceType<GameServer>>> {
+    return await gameServerModel.find();
   }
 
-  public async getGameServer(gameServerId: string): Promise<IGameServer> {
-    if (!Types.ObjectId.isValid(gameServerId)) {
-      throw new Error('invalid id');
-    }
-
-    return await GameServer.findById(gameServerId);
+  public async getGameServer(gameServerId: string): Promise<InstanceType<GameServer>> {
+    return await gameServerModel.findById(gameServerId);
   }
 
-  public async addGameServer(gameServer: Partial<IGameServer>): Promise<IGameServer> {
-    if (!gameServer.address) {
-      throw new Error('server address cannot be empty');
-    }
-
-    if (!gameServer.port) {
-      throw new Error('server port cannot be empty');
-    }
-
-    if (!gameServer.rconPassword) {
-      throw new Error('server rcon password cannot be empty');
-    }
-
-    await verifyServer(gameServer as { address: string, port: number, rconPassword: string });
+  public async addGameServer(gameServer: GameServer): Promise<InstanceType<GameServer>> {
+    await verifyServer(gameServer);
     gameServer.isOnline = true;
 
     try {
@@ -46,23 +30,23 @@ export class GameServerService {
       gameServer.resolvedIpAddresses = addresses;
     } catch (error) { }
 
-    return await new GameServer(gameServer).save();
+    return await gameServerModel.create(gameServer);
   }
 
   public async removeGameServer(gameServerId: string) {
-    const { ok } = await GameServer.deleteOne({ _id: gameServerId });
+    const { ok } = await gameServerModel.deleteOne({ _id: gameServerId });
     logger.debug('game server removed');
     if (!ok) {
       throw new Error('unabled to remove server');
     }
   }
 
-  public async getFreeGameServer(): Promise<IGameServer> {
-    const allGameServers = await GameServer.find();
+  public async getFreeGameServer(): Promise<GameServer> {
+    const allGameServers = await gameServerModel.find();
     for (const gs of allGameServers) {
       logger.debug(`checking availability of ${gs.name}...`);
 
-      const games = await GameServerAssignment
+      const games = await gameServerAssignmentModel
         .find({ server: gs.id, gameRunning: true });
 
       if (games.length === 0) {
@@ -79,42 +63,44 @@ export class GameServerService {
     return null;
   }
 
-  public async assignGame(game: IGame, server: IGameServer) {
-    await new GameServerAssignment({ server, game, gameRunning: true }).save();
+  public async assignGame(game: Game, server: GameServer) {
+    await new gameServerAssignmentModel({ server, game, gameRunning: true }).save();
   }
 
-  public async releaseServer(server: IGameServer) {
-    const assignment = await GameServerAssignment.findOne({ server, gameRunning: true });
+  public async releaseServer(server: GameServer) {
+    const assignment = await gameServerAssignmentModel.findOne({ server, gameRunning: true });
     if (assignment) {
       assignment.gameRunning = false;
       await assignment.save();
     }
   }
 
-  public async getGameServerByEventSource(eventSource: { address: string; port: number; }): Promise<IGameServer> {
-    return await GameServer.findOne({
+  public async getGameServerByEventSource(eventSource: { address: string; port: number; }): Promise<GameServer> {
+    return await gameServerModel.findOne({
       resolvedIpAddresses: eventSource.address,
       port: eventSource.port,
     });
   }
 
-  public async getAssignedGame(server: IGameServer): Promise<IGame> {
-    const assignment = await GameServerAssignment
-      .findOne({ server }, null, { sort: { assignedAt: -1 }});
+  public async getAssignedGame(server: GameServer): Promise<InstanceType<Game>> {
+    const assignment = await gameServerAssignmentModel
+      .findOne({ server }, null, { sort: { assignedAt: -1 }})
+      .populate('game');
 
     if (assignment) {
-      return assignment.game;
+      return assignment.game as InstanceType<Game>;
     } else {
       return null;
     }
   }
 
-  public async getAssignedServer(game: IGame): Promise<IGameServer> {
-    const assignment = await GameServerAssignment
-      .findOne({ game });
+  public async getAssignedServer(game: Game): Promise<InstanceType<GameServer>> {
+    const assignment = await gameServerAssignmentModel
+      .findOne({ game })
+      .populate('server');
 
     if (assignment) {
-      return assignment.server;
+      return assignment.server as InstanceType<GameServer>;
     } else {
       return null;
     }

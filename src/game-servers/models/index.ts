@@ -1,3 +1,3 @@
-export { GameServer, IGameServer } from './game-server';
-export { GameServerAssignment } from './game-server-assignment';
+export { GameServer, gameServerModel } from './game-server';
+export { GameServerAssignment, gameServerAssignmentModel } from './game-server-assignment';
 export { ServerInfoForPlayer } from './server-info-for-player';

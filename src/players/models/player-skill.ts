@@ -1,18 +1,14 @@
-import { Document, model, Schema } from 'mongoose';
-import { renameId } from '../../utils';
-import { IPlayer } from './player';
+import { mapProp, prop, Ref, Typegoose } from 'typegoose';
+import { Player } from './player';
 
-export interface IPlayerSkill extends Document {
-  skill: { [gameClass: string]: number };
-  player?: IPlayer | string;
+export class PlayerSkill extends Typegoose {
+
+  @prop({ ref: Player })
+  public player?: Ref<Player>;
+
+  @mapProp({ of: Number })
+  public skill?: Map<string, number>;
+
 }
 
-const playerSkillSchema: Schema = new Schema({
-  skill: { type: Map, of: Number },
-  player: { type: Schema.Types.ObjectId, ref: 'Player' },
-}, {
-  toJSON: { versionKey: false, transform: renameId },
-});
-
-const playerSkillDb = model<IPlayerSkill>('PlayerSkill', playerSkillSchema);
-export { playerSkillDb as PlayerSkill };
+export const playerSkillModel = new PlayerSkill().getModelForClass(PlayerSkill);

@@ -1,61 +1,64 @@
-import { Document, model, Schema } from 'mongoose';
+import { Schema } from 'mongoose';
+import { arrayProp, mapProp, pre, prop, Ref, Typegoose } from 'typegoose';
+import { Player } from '../../players/models/player';
 import { renameId } from '../../utils';
 import { GamePlayer } from './game-player';
 import { GameState } from './game-state';
 
-export interface IGame extends Document {
-  launchedAt: Date;
-  number: number;
-  teams: { [teamId: string]: string };
-  players: string[];
-  slots: GamePlayer[];
-  map: string;
-  state: GameState;
-  connectString: string;
-  mumbleUrl: string;
-  logsUrl?: string;
-  demoUrl?: string;
-  error?: string;
-}
-
-const gameSchema: Schema = new Schema({
-  launchedAt: Schema.Types.Date,
-  number: Schema.Types.Number,
-  teams: {
-    type: Map,
-    of: Schema.Types.String,
-    required: true,
-  },
-  players: { type: [Schema.Types.ObjectId], required: true },
-  slots: { type: [Schema.Types.Mixed], required: true },
-  map: { type: Schema.Types.String, required: true },
-  state: { type: Schema.Types.String, required: true },
-  connectString: Schema.Types.String,
-  mumbleUrl: Schema.Types.String,
-  logsUrl: Schema.Types.String,
-  demoUrl: Schema.Types.String,
-  error: Schema.Types.String,
-}, {
-  toJSON: { versionKey: false, transform: renameId },
-});
-
-gameSchema.pre('save', async function(next) {
-  const self = this as IGame;
-  if (!self.launchedAt) {
-    self.launchedAt = new Date();
-  }
-
-  if (!self.number) {
-    const latestGame = await gameDb.findOne({}, {}, { sort: { launchedAt: -1 }});
+@pre<Game>('save', async function(next) {
+  if (!this.number) {
+    const latestGame = await gameModel.findOne({}, {}, { sort: { launchedAt: -1 }});
     if (latestGame) {
-      self.number = latestGame.number + 1;
+      this.number = latestGame.number + 1;
     } else {
-      self.number = 1;
+      this.number = 1;
     }
   }
 
   next();
-});
+})
+export class Game extends Typegoose {
+  @prop({ default: new Date() })
+  public launchedAt?: Date;
 
-const gameDb = model<IGame>('Game', gameSchema);
-export { gameDb as Game };
+  @prop({ unique: true })
+  public number?: number;
+
+  @mapProp({ of: String })
+  public teams?: Map<string, string>;
+
+  @arrayProp({ itemsRef: Player })
+  public players?: Array<Ref<Player>>;
+
+  @arrayProp({ items: Schema.Types.Mixed, required: true })
+  public slots!: GamePlayer[];
+
+  @prop()
+  public map?: string;
+
+  @prop()
+  public state?: GameState;
+
+  @prop()
+  public connectString?: string;
+
+  @prop()
+  public mumbleUrl?: string;
+
+  @prop()
+  public logsUrl?: string;
+
+  @prop()
+  public error?: string;
+
+}
+
+export const gameModel = new Game().getModelForClass(Game, {
+  schemaOptions: {
+    toJSON: {
+      versionKey: false,
+      virtuals: true,
+      transform: renameId,
+    },
+  },
+});

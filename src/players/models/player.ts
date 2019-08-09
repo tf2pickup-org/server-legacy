@@ -1,37 +1,39 @@
-import { Document, model, Schema } from 'mongoose';
+import { Schema } from 'mongoose';
+import { prop, Typegoose } from 'typegoose';
 import { renameId } from '../../utils';
 import { PlayerRole } from './player-role';
 
-export interface IPlayer extends Document {
-  steamId: string;
-  name: string;
-  joinedAt: Date;
-  avatarUrl: string;
-  role: PlayerRole;
-  hasAcceptedRules: boolean;
-  etf2lProfileId: number;
+export class Player extends Typegoose {
+  public _id: Schema.Types.ObjectId;
+
+  @prop({ required: true, unique: true, trim: true })
+  public name!: string;
+
+  @prop({ required: true, unique: true })
+  public steamId!: string;
+
+  @prop({ default: new Date() })
+  public joinedAt?: Date;
+
+  @prop()
+  public avatarUrl?: string;
+
+  @prop()
+  public role?: PlayerRole;
+
+  @prop()
+  public hasAcceptedRules?: boolean;
+
+  @prop()
+  public etf2lProfileId?: number;
 }
 
-const playerSchema: Schema = new Schema({
-  steamId: { type: Schema.Types.String, required: true },
-  name: { type: Schema.Types.String, unique: true, trim: true, required: true },
-  joinedAt: Schema.Types.Date,
-  avatarUrl: { type: Schema.Types.String },
-  role: Schema.Types.String,
-  hasAcceptedRules: Schema.Types.Boolean,
-  etf2lProfileId: Schema.Types.Number,
-}, {
-  toJSON: { versionKey: false, transform: renameId },
+export const playerModel = new Player().getModelForClass(Player, {
+  schemaOptions: {
+    toJSON: {
+      versionKey: false,
+      virtuals: true,
+      transform: renameId,
+    },
+  },
 });
-
-playerSchema.pre('save', function(next) {
-  const self = this as IPlayer;
-  if (!self.joinedAt) {
-    self.joinedAt = new Date();
-  }
-
-  next();
-});
-
-const playerDb = model<IPlayer>('Player', playerSchema);
-export { playerDb as Player };

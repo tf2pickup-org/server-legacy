@@ -1,18 +1,17 @@
-import { inject } from 'inversify';
+import { inject, LazyServiceIdentifer } from 'inversify';
 import { provide } from 'inversify-binding-decorators';
-import { Types } from 'mongoose';
+import { InstanceType } from 'typegoose';
 import { Config } from '../../config';
-import { lazyInject } from '../../container';
 import { WsProviderService } from '../../core';
 import { GameEventListener, GameServerService } from '../../game-servers';
-import { IGameServer } from '../../game-servers/models';
+import { GameServer } from '../../game-servers/models';
 import logger from '../../logger';
-import { PlayerService } from '../../players';
-import { PlayerSkill } from '../../players/models/player-skill';
-import { QueueService } from '../../queue';
+import { playerModel } from '../../players/models/player';
+import { playerSkillModel } from '../../players/models/player-skill';
 import { QueueConfig } from '../../queue/models/queue-config';
 import { QueueSlot } from '../../queue/models/queue-slot';
-import { Game, IGame } from '../models';
+import { QueueConfigService } from '../../queue/services/queue-config-service';
+import { Game, gameModel } from '../models';
 import { cleanupServer } from '../utils/cleanup-server';
 import { configureServer } from '../utils/configure-server';
 import { pickTeams, PlayerSlot } from '../utils/pick-teams';
@@ -20,34 +19,29 @@ import { pickTeams, PlayerSlot } from '../utils/pick-teams';
 @provide(GameService)
 export class GameService {
 
-  @lazyInject(WsProviderService) private wsProvider: WsProviderService;
-  @lazyInject(PlayerService) private playerService: PlayerService;
-  @lazyInject(GameServerService) private gameServerService: GameServerService;
-  @lazyInject(QueueService) private queueService: QueueService;
   private ws = this.wsProvider.ws;
 
   constructor(
     @inject('config') private config: Config,
-    @inject(GameEventListener) private gameEventListener: GameEventListener,
+    @inject(new LazyServiceIdentifer(() => GameServerService)) private gameServerService: GameServerService,
+    @inject(new LazyServiceIdentifer(() => QueueConfigService)) private queueConfigService: QueueConfigService,
+    @inject(new LazyServiceIdentifer(() => WsProviderService)) private wsProvider: WsProviderService,
+    @inject(new LazyServiceIdentifer(() => GameEventListener)) private gameEventListener: GameEventListener,
   ) {
     this.gameEventListener.on('match started', async ({ server }) => this.onMatchStarted(server));
     this.gameEventListener.on('match ended', async ({ server }) => this.onMatchEnded(server));
     this.gameEventListener.on('logs uploaded', async ({ server, logsUrl }) => this.onLogsUploaded(server, logsUrl));
   }
 
-  public async getAllGames(): Promise<IGame[]> {
-    return await Game.find().sort({ launchedAt: -1 });
+  public async getAllGames(): Promise<Array<InstanceType<Game>>> {
+    return await gameModel.find().sort({ launchedAt: -1 });
   }
 
-  public async getGame(gameId: string): Promise<IGame> {
-    if (!Types.ObjectId.isValid(gameId)) {
-      throw new Error('invalid id');
-    }
-
-    return await Game.findById(gameId);
+  public async getGame(gameId: string): Promise<InstanceType<Game>> {
+    return await gameModel.findById(gameId);
   }
 
-  public async create(queueSlots: QueueSlot[], queueConfig: QueueConfig, map: string): Promise<IGame> {
+  public async create(queueSlots: QueueSlot[], queueConfig: QueueConfig, map: string): Promise<InstanceType<Game>> {
     queueSlots.forEach(slot => {
       if (!slot.playerId) {
         throw new Error('cannot create the game with queue not being full');
@@ -61,7 +55,7 @@ export class GameService {
     const players: PlayerSlot[] = await Promise.all(queueSlots.map(slot => this.queueSlotToPlayerSlot(slot)));
     const slots = pickTeams(players, queueConfig.classes.map(cls => cls.name));
 
-    const game = new Game({
+    const game = await gameModel.create({
       map,
       state: 'launching',
       teams: {
@@ -71,14 +65,12 @@ export class GameService {
       slots,
       players: queueSlots.map(s => s.playerId),
     });
-
-    await game.save();
     this.ws.emit('game created', game);
     this.launch(game);
     return game;
   }
 
-  public async launch(game: IGame) {
+  public async launch(game: InstanceType<Game>) {
     if (game.state === 'interrupted' || game.state === 'ended') {
       return;
     }
@@ -90,7 +82,7 @@ export class GameService {
         await this.gameServerService.assignGame(game, server);
         await this.resolveMumbleUrl(game, server);
         const { connectString } =
-          await configureServer(server, game, this.queueService.config.execConfigs, this.playerService);
+          await configureServer(server, game, this.queueConfigService.queueConfig.execConfigs);
         this.updateConnectString(game, connectString);
       } catch (error) {
         console.log(error.message);
@@ -123,11 +115,11 @@ export class GameService {
     return game;
   }
 
-  public async activeGameForPlayer(playerId: string): Promise<IGame> {
-    return await Game.findOne({ state: /launching|started/, players: playerId });
+  public async activeGameForPlayer(playerId: string): Promise<InstanceType<Game>> {
+    return await gameModel.findOne({ state: /launching|started/, players: playerId });
   }
 
-  public async resolveMumbleUrl(game: IGame, server: IGameServer) {
+  public async resolveMumbleUrl(game: InstanceType<Game>, server: GameServer) {
     const mumbleUrl =
       `mumble://${this.config.mumble.serverUrl}/${this.config.mumble.channel}/${server.mumbleChannelName}`;
     game.mumbleUrl = mumbleUrl;
@@ -135,7 +127,7 @@ export class GameService {
     this.ws.emit('game updated', game.toJSON());
   }
 
-  private async onMatchStarted(server: IGameServer) {
+  private async onMatchStarted(server: GameServer) {
     const game = await this.gameServerService.getAssignedGame(server);
     if (game) {
       game.state = 'started';
@@ -144,7 +136,7 @@ export class GameService {
     }
   }
 
-  private async onMatchEnded(server: IGameServer) {
+  private async onMatchEnded(server: GameServer) {
     const game = await this.gameServerService.getAssignedGame(server);
     if (game) {
       game.state = 'ended';
@@ -163,7 +155,7 @@ export class GameService {
     }
   }
 
-  private async onLogsUploaded(server: IGameServer, logsUrl: string) {
+  private async onLogsUploaded(server: GameServer, logsUrl: string) {
     const game = await this.gameServerService.getAssignedGame(server);
     if (game) {
       game.logsUrl = logsUrl;
@@ -172,7 +164,7 @@ export class GameService {
     }
   }
 
-  private async updateConnectString(game: IGame, connectString: string) {
+  private async updateConnectString(game: InstanceType<Game>, connectString: string) {
     game.connectString = connectString;
     await game.save();
     this.ws.emit('game updated', game.toJSON());
@@ -180,12 +172,12 @@ export class GameService {
 
   private async queueSlotToPlayerSlot(queueSlot: QueueSlot): Promise<PlayerSlot> {
     const { playerId, gameClass } = queueSlot;
-    const player = await this.playerService.getPlayerById(playerId);
+    const player = await playerModel.findById(playerId);
     if (!player) {
       throw new Error('no such player');
     }
 
-    const skill = await await PlayerSkill.findOne({ player: playerId }).lean();
+    const skill = await playerSkillModel.findOne({ player: playerId }).lean();
     if (skill) {
       const skillForClass = skill.skill[gameClass];
       logger.debug(`skill for player ${player.name}: ${skillForClass}`);

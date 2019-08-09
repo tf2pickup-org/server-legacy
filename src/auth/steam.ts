@@ -4,7 +4,7 @@ import steam from 'passport-steam';
 import { Config } from '../config';
 import { fetchEtf2lPlayerInfo } from '../etf2l';
 import logger from '../logger';
-import { IPlayer, Player } from '../players/models/player';
+import { Player, playerModel } from '../players/models/player';
 import { SteamProfile } from './models/steam-profile';
 
 async function createUser(steamProfile: SteamProfile, config: Config) {
@@ -23,14 +23,14 @@ async function createUser(steamProfile: SteamProfile, config: Config) {
     }
   }
 
-  const player = await new Player({
+  const player = await playerModel.create({
     steamId: steamProfile.id,
     name,
     avatarUrl: steamProfile.photos[0].value,
     role: config.superUser === steamProfile.id ? 'super-user' : null,
     hasAcceptedRules: false,
     etf2lProfileId: etf2lProfile ? etf2lProfile.id : null,
-  }).save();
+  });
   logger.info(`new user: ${name} (steamId: ${steamProfile.id})`);
   return player;
 }
@@ -40,8 +40,8 @@ export function setupSteamStrategy(config: Config) {
     returnURL: `${config.url}/auth/steam/return`,
     realm: `${config.url}`,
     apiKey: config.steam.apiKey,
-  }, async (identifier: any, profile: SteamProfile, done: (error: any, player: IPlayer) => void) => {
-    let player = await Player.findOne({ steamId: profile.id });
+  }, async (identifier: any, profile: SteamProfile, done: (error: any, player: Player) => void) => {
+    let player = await playerModel.findOne({ steamId: profile.id });
 
     if (!player) {
       try {

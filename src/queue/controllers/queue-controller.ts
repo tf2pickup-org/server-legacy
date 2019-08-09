@@ -1,21 +1,22 @@
 import { Response } from 'express';
-import { inject, LazyServiceIdentifer, postConstruct } from 'inversify';
+import { inject, postConstruct } from 'inversify';
 import { controller, httpGet, response } from 'inversify-express-utils';
 import { lazyInject } from '../../container';
 import { WsProviderService } from '../../core';
 import logger from '../../logger';
-import { QueueService } from '../services';
+import { QueueConfigService, QueueService } from '../services';
 
 @controller('/queue')
 export class QueueController {
 
   @lazyInject(QueueService) private queueService: QueueService;
+  @inject(QueueConfigService) private queueConfigService: QueueConfigService;
   @lazyInject(WsProviderService) private wsProvider: WsProviderService;
 
   @httpGet('/')
   public async index(@response() res: Response) {
     return res.status(200).send({
-      config: this.queueService.config,
+      config: this.queueConfigService.queueConfig,
       state: this.queueService.state,
       slots: this.queueService.slots,
       map: this.queueService.map,
@@ -24,7 +25,7 @@ export class QueueController {
 
   @httpGet('/config')
   public async getConfig(@response() res: Response) {
-    return res.status(200).send(this.queueService.config);
+    return res.status(200).send(this.queueConfigService.queueConfig);
   }
 
   @httpGet('/state')

@@ -41,6 +41,7 @@
     "socket.io": "^2.2.0",
     "socketio-jwt-auth": "^0.1.0",
     "srcds-log-receiver": "^1.0.0",
+    "typegoose": "^5.9.0",
     "winston": "^3.2.1"
   },
   "devDependencies": {
