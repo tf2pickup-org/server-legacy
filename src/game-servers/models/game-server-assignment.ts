@@ -13,7 +13,7 @@ export class GameServerAssignment extends Typegoose {
   public game!: Ref<Game>;
 
   @prop({ default: true })
-  public gameRunning: boolean;
+  public gameRunning?: boolean;
 }
 
 export const gameServerAssignmentModel = new GameServerAssignment().getModelForClass(GameServerAssignment);

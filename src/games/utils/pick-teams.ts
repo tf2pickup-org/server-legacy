@@ -1,3 +1,4 @@
+import logger from '../../logger';
 import { GamePlayer } from '../models';
 
 export interface PlayerSlot {
@@ -89,6 +90,8 @@ export function pickTeams(players: PlayerSlot[], gameClasses: string[]): GamePla
 
   allCombinations.sort((a, b) => a.skillDifference - b.skillDifference);
   const selected = allCombinations[0];
+
+  logger.info(`team average kill difference = ${selected.skillDifference}`);
 
   return Object.keys(selected)
     .map(key => {
