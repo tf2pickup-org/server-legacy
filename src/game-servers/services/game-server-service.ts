@@ -1,10 +1,12 @@
 import { resolve as resolveCb } from 'dns';
+import { postConstruct } from 'inversify';
 import { provide } from 'inversify-binding-decorators';
 import { InstanceType } from 'typegoose';
 import { promisify } from 'util';
 import { Game } from '../../games/models';
 import logger from '../../logger';
 import { GameServer, gameServerAssignmentModel, gameServerModel } from '../models';
+import { isServerOnline } from '../utils/is-server-online';
 import { verifyServer } from '../utils/verify-server';
 
 const resolve = promisify(resolveCb);
@@ -103,6 +105,20 @@ export class GameServerService {
       return assignment.server as InstanceType<GameServer>;
     } else {
       return null;
+    }
+  }
+
+  @postConstruct()
+  public initialize() {
+    setInterval(() => this.checkAllServers(), 30 * 1000);
+  }
+
+  private async checkAllServers() {
+    const allGameServers = await gameServerModel.find();
+    for (const server of allGameServers) {
+      const isOnline = await isServerOnline(server.address, server.port);
+      server.isOnline = isOnline;
+      await server.save();
     }
   }
 
