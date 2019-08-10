@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { inject } from 'inversify';
+import { inject, LazyServiceIdentifer } from 'inversify';
 import { controller, httpGet, httpPut, queryParam, requestParam, response } from 'inversify-express-utils';
 import { ensureAuthenticated, ensureRole } from '../../auth';
 import { GameService } from '../services';
@@ -8,7 +8,7 @@ import { GameService } from '../services';
 export class GameController {
 
   constructor(
-    @inject(GameService) private gameService: GameService,
+    @inject(new LazyServiceIdentifer(() => GameService)) private gameService: GameService,
   ) { }
 
   @httpGet('/')
