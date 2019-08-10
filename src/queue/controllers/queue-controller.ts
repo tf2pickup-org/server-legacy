@@ -79,6 +79,15 @@ export class QueueController {
             done({ error: error.message });
           }
         });
+
+        socket.on('vote for map change', async (value: boolean, done) => {
+          try {
+            const slot = await this.queueService.voteForMapChange(player.id, value, socket);
+            done({ value: slot });
+          } catch (error) {
+            done({ error: error.message });
+          }
+        });
       }
     });
     logger.debug('queue ws calls setup');

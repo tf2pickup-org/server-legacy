@@ -7,4 +7,5 @@ export interface QueueConfig {
   readyUpTimeout: number; // milliseconds
   maps: Tf2Map[]; // map pool
   execConfigs: string[]; // what configs to execute
+  nextMapSuccessfulVoteThreshold: number;
 }

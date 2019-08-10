@@ -30,6 +30,10 @@ export class QueueService {
     return this.slots.reduce((prev, curr) => curr.playerReady ? prev + 1 : prev, 0);
   }
 
+  public get mapChangeVoterCount() {
+    return this.slots.reduce((prev, curr) => curr.votesForMapChange ? prev + 1 : prev, 0);
+  }
+
   constructor(
     @inject(WsProviderService) private wsProvider: WsProviderService,
     @inject(GameService) private gameService: GameService,
@@ -45,7 +49,6 @@ export class QueueService {
     this.resetSlots();
     this.ws.emit('queue slots reset', this.slots);
     this.randomizeMap();
-    this.ws.emit('queue map updated', this.map);
     this.updateState();
   }
 
@@ -73,11 +76,15 @@ export class QueueService {
       throw new Error('slot already taken');
     }
 
+    let votesForMapChange = false;
+
     // remove player from any slot he could be occupying
     this.slots.forEach(s => {
       if (s.playerId === playerId) {
         delete s.playerId;
         s.playerReady = false;
+        votesForMapChange = s.votesForMapChange;
+        s.votesForMapChange = false;
         this.slotUpdated(s);
       }
     });
@@ -85,6 +92,8 @@ export class QueueService {
     slot.playerId = playerId;
     if (this.state === 'ready') {
       slot.playerReady = true;
+    } else {
+      slot.votesForMapChange = votesForMapChange;
     }
 
     logger.info(`player "${player.name}" joined the queue at slot id=${slot.id} (game class: ${slot.gameClass})`);
@@ -105,6 +114,7 @@ export class QueueService {
       }
 
       delete slot.playerId;
+      slot.votesForMapChange = false;
       logger.info(`slot ${slot.id} freed`);
       this.slotUpdated(slot, sender);
       setTimeout(() => this.updateState(), 0);
@@ -132,12 +142,28 @@ export class QueueService {
     }
   }
 
+  public async voteForMapChange(playerId: string, value: boolean, voter?: SocketIO.Socket) {
+    if (this.state !== 'waiting') {
+      throw new Error('can vote only when waiting');
+    }
+
+    const slot = this.slots.find(s => s.playerId === playerId);
+    if (slot) {
+      slot.votesForMapChange = value;
+      this.slotUpdated(slot, voter);
+      setTimeout(() => this.shouldChangeMap(), 0);
+      return slot;
+    } else {
+      throw new Error('player is not in the queue');
+    }
+  }
+
   private resetSlots() {
     let lastId = 0;
     this.slots = this.queueConfigService.queueConfig.classes.reduce((prev, curr) => {
       const tmpSlots = [];
       for (let i = 0; i < curr.count * this.queueConfigService.queueConfig.teamCount; ++i) {
-        tmpSlots.push({ id: lastId++, gameClass: curr.name, playerReady: false });
+        tmpSlots.push({ id: lastId++, gameClass: curr.name, playerReady: false, votesForMapChange: false });
       }
 
       return prev.concat(tmpSlots);
@@ -147,6 +173,7 @@ export class QueueService {
   private randomizeMap() {
     const mapPool = this.queueConfigService.queueConfig.maps.filter(map => map !== this.map);
     this.map = mapPool[Math.floor(Math.random() * mapPool.length)];
+    this.ws.emit('queue map updated', this.map);
   }
 
   private updateState() {
@@ -224,6 +251,20 @@ export class QueueService {
     } else {
       this.ws.emit('queue slot update', slot);
     }
+  }
+
+  private shouldChangeMap() {
+    if (this.mapChangeVoterCount >= this.queueConfigService.queueConfig.nextMapSuccessfulVoteThreshold) {
+      this.randomizeMap();
+      this.resetAllVotes();
+    }
+  }
+
+  private resetAllVotes() {
+    this.slots.forEach(s => {
+      s.votesForMapChange = false;
+      this.slotUpdated(s);
+    });
   }
 
 }
