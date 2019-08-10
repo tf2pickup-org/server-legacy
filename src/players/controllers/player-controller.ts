@@ -6,7 +6,7 @@ import { ensureAuthenticated, ensureRole } from '../../auth';
 import { Player, playerModel } from '../models/player';
 import { PlayerBan, playerBanModel } from '../models/player-ban';
 import { PlayerSkill, playerSkillModel } from '../models/player-skill';
-import { PlayerBansService, PlayerService, PlayerSkillService } from '../services';
+import { PlayerBansService, PlayerService, PlayerSkillService, PlayerStatsService } from '../services';
 
 @controller('/players')
 export class PlayerController {
@@ -15,6 +15,7 @@ export class PlayerController {
     @inject(PlayerService) private playerService: PlayerService,
     @inject(PlayerSkillService) private playerSkillService: PlayerSkillService,
     @inject(PlayerBansService) private playerBansService: PlayerBansService,
+    @inject(PlayerStatsService) private playerStatsService: PlayerStatsService,
   ) { }
 
   @httpGet('/')
@@ -109,6 +110,16 @@ export class PlayerController {
       return res.status(201).send(addedBan.toJSON());
     } catch (error) {
       return res.status(400).send({ message: error.message });
+    }
+  }
+
+  @httpGet('/:id/stats')
+  public async getPlayerStats(@requestParam('id') playerId: string, @response() res: Response) {
+    try {
+      const stats = await this.playerStatsService.getPlayerStats(playerId);
+      return res.status(200).send(stats);
+    } catch (error) {
+      return res.status(500).send({ message: error.message });
     }
   }
 
