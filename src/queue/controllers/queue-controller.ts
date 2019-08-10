@@ -1,9 +1,12 @@
 import { Response } from 'express';
 import { inject, postConstruct } from 'inversify';
 import { controller, httpGet, response } from 'inversify-express-utils';
+import { InstanceType } from 'typegoose';
 import { lazyInject } from '../../container';
 import { WsProviderService } from '../../core';
 import logger from '../../logger';
+import { Player } from '../../players/models/player';
+import { OnlinePlayerService } from '../../players/services/online-player-service';
 import { QueueConfigService, QueueService } from '../services';
 
 @controller('/queue')
@@ -12,6 +15,7 @@ export class QueueController {
   @lazyInject(QueueService) private queueService: QueueService;
   @inject(QueueConfigService) private queueConfigService: QueueConfigService;
   @lazyInject(WsProviderService) private wsProvider: WsProviderService;
+  @inject(OnlinePlayerService) private onlinePlayerService: OnlinePlayerService;
 
   @httpGet('/')
   public async index(@response() res: Response) {
@@ -47,13 +51,7 @@ export class QueueController {
   public setupWs() {
     this.wsProvider.ws.on('connection', socket => {
       if (socket.request.user.logged_in) {
-        const player = socket.request.user;
-
-        socket.on('disconnect', () => {
-          try {
-            this.queueService.leave(player.id);
-          } catch (error) { }
-        });
+        const player = socket.request.user as InstanceType<Player>;
 
         socket.on('join queue', async (slotId: number, done) => {
           try {
@@ -84,6 +82,14 @@ export class QueueController {
       }
     });
     logger.debug('queue ws calls setup');
+
+    this.onlinePlayerService.on('player left', ({ playerId }) => {
+      try {
+        this.queueService.leave(playerId);
+      } catch (error) {
+        logger.error(error);
+      }
+    });
   }
 
 }
