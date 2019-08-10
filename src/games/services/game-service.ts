@@ -129,7 +129,7 @@ export class GameService {
 
   private async onMatchStarted(server: GameServer) {
     const game = await this.gameServerService.getAssignedGame(server);
-    if (game) {
+    if (game && game.state === 'launching') {
       game.state = 'started';
       await game.save();
       this.ws.emit('game updated', game.toJSON());
