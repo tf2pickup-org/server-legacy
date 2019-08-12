@@ -1,9 +1,15 @@
-import { Schema } from 'mongoose';
+import { Document, Schema } from 'mongoose';
 import { arrayProp, mapProp, pre, prop, Ref, Typegoose } from 'typegoose';
 import { Player } from '../../players/models/player';
 import { renameId } from '../../utils';
 import { GamePlayer } from './game-player';
 import { GameState } from './game-state';
+
+function removeAssignedSkills(doc: Document, ret: any) {
+  ret = renameId(doc, ret);
+  delete ret.assignedSkills;
+  return ret;
+}
 
 @pre<Game>('save', async function(next) {
   if (!this.number) {
@@ -34,6 +40,9 @@ export class Game extends Typegoose {
   @arrayProp({ items: Schema.Types.Mixed, required: true })
   public slots!: GamePlayer[];
 
+  @mapProp({ of: Number })
+  public assignedSkills?: Map<string, number>;
+
   @prop()
   public map?: string;
 
@@ -59,7 +68,7 @@ export const gameModel = new Game().getModelForClass(Game, {
     toJSON: {
       versionKey: false,
       virtuals: true,
-      transform: renameId,
+      transform: removeAssignedSkills,
     },
   },
 });

@@ -53,6 +53,7 @@ export class GameService {
     });
 
     const players: PlayerSlot[] = await Promise.all(queueSlots.map(slot => this.queueSlotToPlayerSlot(slot)));
+    const assignedSkills = players.reduce((prev, curr) => { prev[curr.playerId] = curr.skill; return prev; }, { });
     const slots = pickTeams(players, queueConfig.classes.map(cls => cls.name));
 
     const game = await gameModel.create({
@@ -64,6 +65,7 @@ export class GameService {
       },
       slots,
       players: queueSlots.map(s => s.playerId),
+      assignedSkills,
     });
     this.ws.emit('game created', game);
     this.launch(game);

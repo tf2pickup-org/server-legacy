@@ -31,6 +31,20 @@ export class GameController {
     }
   }
 
+  @httpGet('/:id/skills', ensureAuthenticated, ensureRole('admin', 'super-user'))
+  public async getGameSkills(@requestParam('id') gameId: string, @response() res: Response) {
+    try {
+      const game = await this.gameService.getGame(gameId);
+      if (game) {
+        return res.status(200).send(game.assignedSkills);
+      } else {
+        return res.status(404).send({ message: 'no such game' });
+      }
+    } catch (error) {
+      return res.status(400).send({ message: error.message });
+    }
+  }
+
   @httpPut('/:id', ensureAuthenticated, ensureRole('admin', 'super-user'))
   public async forceEndGame(@requestParam('id') gameId: string, @queryParam() query: any, @response() res: Response) {
     if (query.hasOwnProperty('force_end')) {
