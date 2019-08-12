@@ -8,7 +8,7 @@ export class PlayerBansService {
     return await playerBanModel.find({
       player: playerId,
       end: {
-        $lte: new Date(),
+        $gte: new Date(),
       },
     });
   }

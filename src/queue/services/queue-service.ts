@@ -4,6 +4,7 @@ import { WsProviderService } from '../../core';
 import { GameService } from '../../games/services/game-service';
 import logger from '../../logger';
 import { playerModel } from '../../players/models/player';
+import { PlayerBansService } from '../../players/services/player-bans-service';
 import { QueueSlot } from '../models/queue-slot';
 import { QueueState } from '../models/queue-state';
 import { QueueConfigService } from './queue-config-service';
@@ -38,6 +39,7 @@ export class QueueService {
     @inject(WsProviderService) private wsProvider: WsProviderService,
     @inject(GameService) private gameService: GameService,
     @inject(QueueConfigService) private queueConfigService: QueueConfigService,
+    @inject(PlayerBansService) private playerBansService: PlayerBansService,
   ) {
     this.reset();
   }
@@ -61,6 +63,11 @@ export class QueueService {
     const player = await playerModel.findById(playerId);
     if (!player) {
       throw new Error('no such player');
+    }
+
+    const bans  = await this.playerBansService.getActiveBansForPlayer(playerId);
+    if (bans.length > 0) {
+      throw new Error('user is banned from joining the queue');
     }
 
     if (!!(await this.gameService.activeGameForPlayer(playerId))) {
