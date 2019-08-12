@@ -1,12 +1,12 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { inject } from 'inversify';
-import { controller, httpGet, httpPatch, httpPost, httpPut, requestBody, requestParam,
-  response } from 'inversify-express-utils';
+import { controller, httpGet, httpPatch, httpPost, httpPut, queryParam, request,
+  requestBody, requestParam, response} from 'inversify-express-utils';
 import { ensureAuthenticated, ensureRole } from '../../auth';
 import { Player, playerModel } from '../models/player';
 import { PlayerBan, playerBanModel } from '../models/player-ban';
 import { PlayerSkill, playerSkillModel } from '../models/player-skill';
-import { PlayerBansService, PlayerService, PlayerSkillService, PlayerStatsService } from '../services';
+import { PlayerService, PlayerSkillService, PlayerStatsService } from '../services';
 
 @controller('/players')
 export class PlayerController {
@@ -14,7 +14,6 @@ export class PlayerController {
   constructor(
     @inject(PlayerService) private playerService: PlayerService,
     @inject(PlayerSkillService) private playerSkillService: PlayerSkillService,
-    @inject(PlayerBansService) private playerBansService: PlayerBansService,
     @inject(PlayerStatsService) private playerStatsService: PlayerStatsService,
   ) { }
 
@@ -95,7 +94,7 @@ export class PlayerController {
   @httpGet('/:id/bans', ensureAuthenticated, ensureRole('admin', 'super-user'))
   public async getPlayerBans(@requestParam('id') playerId: string, @response() res: Response) {
     try {
-      const bans = await playerBanModel.find({ player: playerId });
+      const bans = await playerBanModel.find({ player: playerId }).sort({ start: -1 });
       return res.status(200).send(bans.map(b => b.toJSON()));
     } catch (error) {
       return res.status(400).send({ message: error.message });
@@ -104,12 +103,32 @@ export class PlayerController {
 
   @httpPost('/:id/bans', ensureAuthenticated, ensureRole('admin', 'super-user'))
   public async addPlayerBan(@requestParam('id') playerId: string, @requestBody() ban: PlayerBan,
-                            @response() res: Response) {
+                            @request() req: Request, @response() res: Response) {
     try {
-      const addedBan = await playerBanModel.create(ban);
+      const admin = req.user.id;
+      const addedBan = await playerBanModel.create({ ...ban, admin });
       return res.status(201).send(addedBan.toJSON());
     } catch (error) {
       return res.status(400).send({ message: error.message });
+    }
+  }
+
+  @httpPut('/:id/bans', ensureAuthenticated, ensureRole('admin', 'super-user'))
+  public async alterPlayerBan(@requestParam('id') playerId: string, @queryParam() query: any,
+                              @requestBody() ban: PlayerBan, @response() res: Response) {
+    if (query.hasOwnProperty('revoke')) {
+      if (!ban.id) {
+        return res.status(400).send({ message: 'ban id invalid' });
+      }
+
+      try {
+        const _ban = await playerBanModel.findById(ban.id);
+        _ban.end = new Date();
+        _ban.save();
+        return res.status(200).send(_ban.toJSON());
+      } catch (error) {
+        return res.status(400).send({ message: error.message });
+      }
     }
   }
 
