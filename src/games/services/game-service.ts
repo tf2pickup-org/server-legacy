@@ -117,6 +117,19 @@ export class GameService {
     return game;
   }
 
+  public async reinitialize(gameId: string) {
+    const game = await this.getGame(gameId);
+    game.connectString = null;
+    await game.save();
+    this.ws.emit('game updated', game.toJSON());
+
+    const server = await this.gameServerService.getAssignedServer(game);
+    await cleanupServer(server);
+    const { connectString } =
+      await configureServer(server, game, this.queueConfigService.queueConfig.execConfigs);
+    this.updateConnectString(game, connectString);
+  }
+
   public async activeGameForPlayer(playerId: string): Promise<InstanceType<Game>> {
     return await gameModel.findOne({ state: /launching|started/, players: playerId });
   }

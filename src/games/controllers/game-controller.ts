@@ -46,10 +46,15 @@ export class GameController {
   }
 
   @httpPut('/:id', ensureAuthenticated, ensureRole('admin', 'super-user'))
-  public async forceEndGame(@requestParam('id') gameId: string, @queryParam() query: any, @response() res: Response) {
+  public async takeAdminAction(@requestParam('id') gameId: string, @queryParam() query: any,
+                               @response() res: Response) {
     if (query.hasOwnProperty('force_end')) {
       this.gameService.forceEnd(gameId);
+    } else if (query.hasOwnProperty('reinitialize_server')) {
+      this.gameService.reinitialize(gameId);
     }
+
+    res.status(200).send();
   }
 
 }
