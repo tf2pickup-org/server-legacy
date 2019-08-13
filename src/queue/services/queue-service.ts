@@ -1,5 +1,6 @@
 import { inject } from 'inversify';
 import { provide } from 'inversify-binding-decorators';
+import { shuffle } from 'lodash';
 import { WsProviderService } from '../../core';
 import { GameService } from '../../games/services/game-service';
 import logger from '../../logger';
@@ -7,6 +8,7 @@ import { playerModel } from '../../players/models/player';
 import { PlayerBansService } from '../../players/services/player-bans-service';
 import { QueueSlot } from '../models/queue-slot';
 import { QueueState } from '../models/queue-state';
+import { Tf2Map } from '../models/tf2-map';
 import { QueueConfigService } from './queue-config-service';
 
 @provide(QueueService)
@@ -17,6 +19,7 @@ export class QueueService {
   public map: string;
   private timer: NodeJS.Timeout;
   private ws = this.wsProvider.ws;
+  private mapPool: Tf2Map[] = [];
 
   public get requiredPlayerCount() {
     return this.queueConfigService.queueConfig.classes
@@ -178,8 +181,13 @@ export class QueueService {
   }
 
   private randomizeMap() {
-    const mapPool = this.queueConfigService.queueConfig.maps.filter(map => map !== this.map);
-    this.map = mapPool[Math.floor(Math.random() * mapPool.length)];
+    if (this.mapPool.length === 0) {
+      this.mapPool = shuffle(this.queueConfigService.queueConfig.maps);
+      while (this.mapPool[0] === this.map) {
+        this.mapPool = shuffle(this.queueConfigService.queueConfig.maps);
+      }
+    }
+    this.map = this.mapPool.shift();
     this.ws.emit('queue map updated', this.map);
   }
 
