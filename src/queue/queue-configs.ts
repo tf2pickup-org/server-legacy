@@ -30,7 +30,7 @@ export const queueConfigs: { [name: string]: QueueConfig } = {
       'cp_prolands_rc2t',
     ],
     execConfigs: ['etf2l_6v6_5cp'],
-    nextMapSuccessfulVoteThreshold: 7,
+    nextMapSuccessfulVoteThreshold: 9,
   },
   'bball': {
     teamCount: 2,
