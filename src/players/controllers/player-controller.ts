@@ -3,6 +3,7 @@ import { inject } from 'inversify';
 import { controller, httpGet, httpPatch, httpPost, httpPut, queryParam, request,
   requestBody, requestParam, response} from 'inversify-express-utils';
 import { ensureAuthenticated, ensureRole } from '../../auth';
+import { QueueService } from '../../queue/services/queue-service';
 import { Player, playerModel } from '../models/player';
 import { PlayerBan, playerBanModel } from '../models/player-ban';
 import { PlayerSkill, playerSkillModel } from '../models/player-skill';
@@ -15,6 +16,7 @@ export class PlayerController {
     @inject(PlayerService) private playerService: PlayerService,
     @inject(PlayerSkillService) private playerSkillService: PlayerSkillService,
     @inject(PlayerStatsService) private playerStatsService: PlayerStatsService,
+    @inject(QueueService) private queueService: QueueService,
   ) { }
 
   @httpGet('/')
@@ -107,6 +109,7 @@ export class PlayerController {
     try {
       const admin = req.user.id;
       const addedBan = await playerBanModel.create({ ...ban, admin });
+      this.queueService.validateAllPlayers();
       return res.status(201).send(addedBan.toJSON());
     } catch (error) {
       return res.status(400).send({ message: error.message });

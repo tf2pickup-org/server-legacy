@@ -168,6 +168,19 @@ export class QueueService {
     }
   }
 
+  public async validateAllPlayers() {
+    this.slots.filter(s => !!s.playerId).forEach(async slot => {
+      const bans = await this.playerBansService.getActiveBansForPlayer(slot.playerId);
+      if (bans.length > 0) {
+        delete slot.playerId;
+        slot.votesForMapChange = false;
+        logger.info(`slot ${slot.id} freed`);
+        this.slotUpdated(slot);
+        setTimeout(() => this.updateState(), 0);
+      }
+    });
+  }
+
   private resetSlots() {
     let lastId = 0;
     this.slots = this.queueConfigService.queueConfig.classes.reduce((prev, curr) => {
