@@ -3,11 +3,11 @@ import { inject } from 'inversify';
 import { controller, httpGet, httpPatch, httpPost, httpPut, queryParam, request,
   requestBody, requestParam, response} from 'inversify-express-utils';
 import { ensureAuthenticated, ensureRole } from '../../auth';
-import { QueueService } from '../../queue/services/queue-service';
 import { Player, playerModel } from '../models/player';
 import { PlayerBan, playerBanModel } from '../models/player-ban';
 import { PlayerSkill, playerSkillModel } from '../models/player-skill';
-import { PlayerService, PlayerSkillService, PlayerStatsService } from '../services';
+import { OnlinePlayerService, PlayerBansService, PlayerService, PlayerSkillService,
+    PlayerStatsService } from '../services';
 
 @controller('/players')
 export class PlayerController {
@@ -16,7 +16,8 @@ export class PlayerController {
     @inject(PlayerService) private playerService: PlayerService,
     @inject(PlayerSkillService) private playerSkillService: PlayerSkillService,
     @inject(PlayerStatsService) private playerStatsService: PlayerStatsService,
-    @inject(QueueService) private queueService: QueueService,
+    @inject(PlayerBansService) private playerBansService: PlayerBansService,
+    @inject(OnlinePlayerService) private onlinePlayersService: OnlinePlayerService,
   ) { }
 
   @httpGet('/')
@@ -47,6 +48,8 @@ export class PlayerController {
       if (player) {
         player.name = body.name;
         await player.save();
+        this.onlinePlayersService.getSocketsForPlayer(playerId).forEach(socket =>
+          socket.emit('profile update', { name: player.name }));
         return res.status(200).send(player.toJSON());
       } else {
         return res.status(404).send({ message: 'no such player' });
@@ -108,8 +111,7 @@ export class PlayerController {
                             @request() req: Request, @response() res: Response) {
     try {
       const admin = req.user.id;
-      const addedBan = await playerBanModel.create({ ...ban, admin });
-      this.queueService.validateAllPlayers();
+      const addedBan = await this.playerBansService.addPlayerBan({ ...ban, admin });
       return res.status(201).send(addedBan.toJSON());
     } catch (error) {
       return res.status(400).send({ message: error.message });
@@ -120,14 +122,8 @@ export class PlayerController {
   public async alterPlayerBan(@requestParam('id') playerId: string, @queryParam() query: any,
                               @requestBody() ban: PlayerBan, @response() res: Response) {
     if (query.hasOwnProperty('revoke')) {
-      if (!ban.id) {
-        return res.status(400).send({ message: 'ban id invalid' });
-      }
-
       try {
-        const _ban = await playerBanModel.findById(ban.id);
-        _ban.end = new Date();
-        _ban.save();
+        const _ban = await this.playerBansService.revokeBan(ban.id.toString());
         return res.status(200).send(_ban.toJSON());
       } catch (error) {
         return res.status(400).send({ message: error.message });

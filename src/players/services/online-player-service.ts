@@ -33,6 +33,10 @@ export class OnlinePlayerService extends EventEmitter {
     });
   }
 
+  public getSocketsForPlayer(playerId: string): SocketIO.Socket[] {
+    return this.sockets.get(playerId) || [];
+  }
+
   private verifyPlayer(playerId: string) {
     const sockets = this.sockets.get(playerId);
     if (sockets.length === 0) {
