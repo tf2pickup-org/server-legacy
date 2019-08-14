@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { inject, LazyServiceIdentifer } from 'inversify';
 import { controller, httpGet, httpPut, queryParam, requestParam, response } from 'inversify-express-utils';
 import { ensureAuthenticated, ensureRole } from '../../auth';
+import { gameModel } from '../models/game';
 import { GameService } from '../services';
 
 @controller('/games')
@@ -12,9 +13,25 @@ export class GameController {
   ) { }
 
   @httpGet('/')
-  public async index(@response() res: Response) {
-    const games = await this.gameService.getAllGames();
-    return res.status(200).send(games.map(g => g.toJSON()));
+  public async getGames(@queryParam('limit') limit: string, @queryParam('offset') offset: string,
+                        @response() res: Response) {
+    if (limit === undefined || offset === undefined) {
+      return res.status(400).send({ message: 'both limit and offset properties must be specified' });
+    }
+
+    try {
+      const [ results, itemCount ] = await Promise.all([
+        gameModel.find()
+          .sort({ launchedAt: -1 })
+          .limit(parseInt(limit, 10))
+          .skip(parseInt(offset, 10)),
+        gameModel.count({}),
+      ]);
+
+      return res.status(200).send({ results, itemCount });
+    } catch (error) {
+      return res.status(400).send({ message: error.message });
+    }
   }
 
   @httpGet('/:id')
