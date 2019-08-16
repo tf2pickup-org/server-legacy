@@ -15,7 +15,6 @@ function removeAssignedSkills(doc: Document, ret: any) {
   if (!this.number) {
     const latestGame = await gameModel.findOne({}, {}, { sort: { launchedAt: -1 }});
     if (latestGame) {
-      console.log(`latestGame number = ${latestGame.number}`);
       this.number = latestGame.number + 1;
     } else {
       this.number = 1;

@@ -26,7 +26,6 @@ export class WsProviderService {
       secret: this.keyStore.getKey('ws', 'verify') as string,
       succeedWithoutToken: true,
     }, async (payload: { id?: any }, done) => {
-      logger.debug(`verifying`);
       if (payload && payload.id) {
         try {
           const player = await playerModel.findById(payload.id);
@@ -42,15 +41,6 @@ export class WsProviderService {
         return done();
       }
     }));
-
-    this.ws.on('connection', socket => {
-      if (socket.request.user.logged_in) {
-        const userName = socket.request.user.name;
-        logger.debug(`WS connection (${userName})`);
-      } else {
-        logger.debug('WS connection (anonymous)');
-      }
-    });
   }
 
 }
