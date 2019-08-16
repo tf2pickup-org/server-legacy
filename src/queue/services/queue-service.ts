@@ -1,4 +1,4 @@
-import { inject, LazyServiceIdentifer } from 'inversify';
+import { inject } from 'inversify';
 import { provide } from 'inversify-binding-decorators';
 import { shuffle } from 'lodash';
 import { WsProviderService } from '../../core';
@@ -42,8 +42,9 @@ export class QueueService {
     @inject(WsProviderService) private wsProvider: WsProviderService,
     @inject(GameService) private gameService: GameService,
     @inject(QueueConfigService) private queueConfigService: QueueConfigService,
-    @inject(new LazyServiceIdentifer(() => PlayerBansService)) private playerBansService: PlayerBansService,
+    @inject(PlayerBansService) private playerBansService: PlayerBansService,
   ) {
+    this.playerBansService.on('player banned', playerId => this.kick(playerId));
     this.reset();
   }
 
@@ -131,6 +132,21 @@ export class QueueService {
       return slot;
     } else {
       return null;
+    }
+  }
+
+  public kick(playerId: string) {
+    const slot = this.slots.find(s => s.playerId === playerId);
+    if (slot) {
+      if (this.state === 'launching') {
+        return;
+      }
+
+      delete slot.playerId;
+      slot.votesForMapChange = false;
+      logger.info(`slot ${slot.id} freed (kicked)`);
+      this.slotUpdated(slot);
+      setTimeout(() => this.updateState(), 0);
     }
   }
 

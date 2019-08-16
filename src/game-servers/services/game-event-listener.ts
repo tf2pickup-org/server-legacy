@@ -3,7 +3,6 @@ import { decorate, inject } from 'inversify';
 import { provide } from 'inversify-binding-decorators';
 import { LogMessage, LogReceiver } from 'srcds-log-receiver';
 import { Config } from '../../config';
-import { lazyInject } from '../../container';
 import logger from '../../logger';
 import { GameServerService } from './game-server-service';
 
@@ -18,10 +17,10 @@ decorate(provide(EventEmitter), EventEmitter);
 export class GameEventListener extends EventEmitter {
 
   private logReceiver: LogReceiver;
-  @lazyInject(GameServerService) private gameServerService: GameServerService;
 
   constructor(
     @inject('config') private config: Config,
+    @inject(GameServerService) private gameServerService: GameServerService,
   ) {
     super();
 

@@ -68,6 +68,7 @@
     "mongodb-memory-server": "^5.1.10",
     "ts-node-dev": "^1.0.0-pre.40",
     "tslint": "^5.18.0",
+    "tslint-no-circular-imports": "^0.7.0",
     "typescript": "^3.5.3"
   }
 }

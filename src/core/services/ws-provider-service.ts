@@ -2,7 +2,7 @@ import { inject } from 'inversify';
 import { provide } from 'inversify-binding-decorators';
 import socketio from 'socket.io';
 import { authenticate } from 'socketio-jwt-auth';
-import { KeyStore } from '../../auth';
+import { KeyStore } from '../../auth/services/key-store';
 import logger from '../../logger';
 import { playerModel } from '../../players/models/player';
 import { ExpressAppProvider } from './express-app-provider';

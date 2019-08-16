@@ -5,8 +5,8 @@ import { createServer, Server } from 'http';
 import { inject } from 'inversify';
 import { provide } from 'inversify-binding-decorators';
 import passport from 'passport';
-import { KeyStore } from '../../auth';
 import { setupJwtStrategy } from '../../auth/jwt';
+import { KeyStore } from '../../auth/services/key-store';
 import { setupSteamStrategy } from '../../auth/steam';
 import { Config } from '../../config';
 

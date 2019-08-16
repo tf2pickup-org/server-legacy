@@ -2,7 +2,6 @@ import { Response } from 'express';
 import { inject, postConstruct } from 'inversify';
 import { controller, httpGet, response } from 'inversify-express-utils';
 import { InstanceType } from 'typegoose';
-import { lazyInject } from '../../container';
 import { WsProviderService } from '../../core';
 import logger from '../../logger';
 import { Player } from '../../players/models/player';
@@ -12,9 +11,9 @@ import { QueueConfigService, QueueService } from '../services';
 @controller('/queue')
 export class QueueController {
 
-  @lazyInject(QueueService) private queueService: QueueService;
+  @inject(QueueService) private queueService: QueueService;
   @inject(QueueConfigService) private queueConfigService: QueueConfigService;
-  @lazyInject(WsProviderService) private wsProvider: WsProviderService;
+  @inject(WsProviderService) private wsProvider: WsProviderService;
   @inject(OnlinePlayerService) private onlinePlayerService: OnlinePlayerService;
 
   @httpGet('/')

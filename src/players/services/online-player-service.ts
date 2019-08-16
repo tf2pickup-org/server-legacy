@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import { inject, LazyServiceIdentifer } from 'inversify';
 import { provide } from 'inversify-binding-decorators';
 import { InstanceType } from 'typegoose';
-import { WsProviderService } from '../../core';
+import { WsProviderService } from '../../core/services/ws-provider-service';
 import { Player } from '../models/player';
 
 type SocketList = SocketIO.Socket[];
@@ -14,7 +14,7 @@ export class OnlinePlayerService extends EventEmitter {
   private sockets = new Map<string, SocketList>();
 
   constructor(
-    @inject(new LazyServiceIdentifer(() => WsProviderService)) private wsProvider: WsProviderService,
+    @inject(WsProviderService) private wsProvider: WsProviderService,
   ) {
     super();
 

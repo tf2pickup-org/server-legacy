@@ -1,5 +1,5 @@
 import { prop, Ref, Typegoose } from 'typegoose';
-import { Game } from '../../games';
+import { Game } from '../../games/models/game';
 import { GameServer } from './game-server';
 
 export class GameServerAssignment extends Typegoose {

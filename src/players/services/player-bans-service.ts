@@ -1,15 +1,14 @@
+import { EventEmitter } from 'events';
+import { inject } from 'inversify';
 import { provide } from 'inversify-binding-decorators';
 import { InstanceType } from 'typegoose';
-import { lazyInject } from '../../container';
-import { QueueService } from '../../queue/services/queue-service';
 import { PlayerBan, playerBanModel } from '../models/player-ban';
 import { OnlinePlayerService } from './online-player-service';
 
 @provide(PlayerBansService)
-export class PlayerBansService {
+export class PlayerBansService extends EventEmitter {
 
-  @lazyInject(QueueService) private queueService: QueueService;
-  @lazyInject(OnlinePlayerService) private onlinePlayersService: OnlinePlayerService;
+  @inject(OnlinePlayerService) private onlinePlayersService: OnlinePlayerService;
 
   public async getActiveBansForPlayer(playerId: string): Promise<PlayerBan[]> {
     return await playerBanModel.find({
@@ -22,7 +21,7 @@ export class PlayerBansService {
 
   public async addPlayerBan(playerBan: Partial<PlayerBan>): Promise<InstanceType<PlayerBan>> {
     const addedBan = await playerBanModel.create(playerBan);
-    this.queueService.validateAllPlayers();
+    this.emit('player banned', playerBan.player);
     this.onlinePlayersService.getSocketsForPlayer(addedBan.player.toString()).forEach(async socket => {
       const bans = await this.getActiveBansForPlayer(addedBan.player.toString());
       socket.emit('profile update', { bans });

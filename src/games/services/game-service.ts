@@ -1,10 +1,10 @@
-import { inject, LazyServiceIdentifer } from 'inversify';
+import { inject } from 'inversify';
 import { provide } from 'inversify-binding-decorators';
 import { InstanceType } from 'typegoose';
 import { Config } from '../../config';
 import { WsProviderService } from '../../core';
-import { GameEventListener, GameServerService } from '../../game-servers';
-import { GameServer } from '../../game-servers/models';
+import { GameServer } from '../../game-servers/models/game-server';
+import { GameEventListener, GameServerService } from '../../game-servers/services';
 import logger from '../../logger';
 import { playerModel } from '../../players/models/player';
 import { playerSkillModel } from '../../players/models/player-skill';
@@ -23,10 +23,10 @@ export class GameService {
 
   constructor(
     @inject('config') private config: Config,
-    @inject(new LazyServiceIdentifer(() => GameServerService)) private gameServerService: GameServerService,
-    @inject(new LazyServiceIdentifer(() => QueueConfigService)) private queueConfigService: QueueConfigService,
-    @inject(new LazyServiceIdentifer(() => WsProviderService)) private wsProvider: WsProviderService,
-    @inject(new LazyServiceIdentifer(() => GameEventListener)) private gameEventListener: GameEventListener,
+    @inject(GameServerService) private gameServerService: GameServerService,
+    @inject(QueueConfigService) private queueConfigService: QueueConfigService,
+    @inject(WsProviderService) private wsProvider: WsProviderService,
+    @inject(GameEventListener) private gameEventListener: GameEventListener,
   ) {
     this.gameEventListener.on('match started', async ({ server }) => this.onMatchStarted(server));
     this.gameEventListener.on('match ended', async ({ server }) => this.onMatchEnded(server));

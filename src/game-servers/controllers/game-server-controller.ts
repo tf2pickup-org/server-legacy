@@ -5,7 +5,7 @@ import { controller, httpDelete, httpGet, httpPost, requestBody, requestParam,
 import { ensureAuthenticated, ensureRole } from '../../auth';
 import logger from '../../logger';
 import { GameServer } from '../models';
-import { GameServerService } from '../services';
+import { GameServerService } from '../services/game-server-service';
 
 @controller('/game-servers')
 export class GameServerController {

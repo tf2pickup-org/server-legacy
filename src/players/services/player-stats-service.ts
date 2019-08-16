@@ -1,7 +1,7 @@
 import { inject } from 'inversify';
 import { provide } from 'inversify-binding-decorators';
-import { gameModel } from '../../games';
-import { QueueConfigService } from '../../queue';
+import { gameModel } from '../../games/models/game';
+import { QueueConfigService } from '../../queue/services/queue-config-service';
 import { PlayerStats } from '../models/player-stats';
 
 @provide(PlayerStatsService)
