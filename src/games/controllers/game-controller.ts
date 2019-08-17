@@ -28,7 +28,7 @@ export class GameController {
         gameModel.count({}),
       ]);
 
-      return res.status(200).send({ results, itemCount });
+      return res.status(200).send({ results: results.map(r => r.toJSON()), itemCount });
     } catch (error) {
       return res.status(400).send({ message: error.message });
     }

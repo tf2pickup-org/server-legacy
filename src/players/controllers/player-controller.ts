@@ -3,6 +3,7 @@ import { inject } from 'inversify';
 import { controller, httpGet, httpPatch, httpPost, httpPut, queryParam, request,
   requestBody, requestParam, response} from 'inversify-express-utils';
 import { ensureAuthenticated, ensureRole } from '../../auth';
+import { gameModel } from '../../games/models/game';
 import { Player, playerModel } from '../models/player';
 import { PlayerBan, playerBanModel } from '../models/player-ban';
 import { PlayerSkill, playerSkillModel } from '../models/player-skill';
@@ -60,10 +61,22 @@ export class PlayerController {
   }
 
   @httpGet('/:id/games')
-  public async getPlayerGames(@requestParam('id') playerId: string, @response() res: Response) {
+  public async getPlayerGames(@requestParam('id') playerId: string, @queryParam('limit') limit: string,
+                              @queryParam('offset') offset: string, @response() res: Response) {
+    if (limit === undefined || offset === undefined) {
+      return res.status(400).send({ message: 'both limit and offset properties must be specified' });
+    }
+
     try {
-      const games = await this.playerService.getPlayerGames(playerId);
-      return res.status(200).send(games.map(g => g.toJSON()));
+      const [ results, itemCount ] = await Promise.all([
+        gameModel.find({ players: playerId })
+          .sort({ launchedAt: -1 })
+          .limit(parseInt(limit, 10))
+          .skip(parseInt(offset, 10)),
+        gameModel.count({}),
+      ]);
+
+      return res.status(200).send({ results: results.map(r => r.toJSON()), itemCount });
     } catch (error) {
       return res.status(400).send({ message: error.message });
     }
