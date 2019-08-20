@@ -103,6 +103,6 @@ export function pickTeams(players: PlayerSlot[], gameClasses: string[]): GamePla
     .flatMap(p => p)
     .map(p => {
       const { skill, ...player } = p;
-      return player;
+      return { ...player, status: 'active' };
     });
 }

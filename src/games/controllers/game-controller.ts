@@ -69,6 +69,12 @@ export class GameController {
       this.gameService.forceEnd(gameId);
     } else if (query.hasOwnProperty('reinitialize_server')) {
       this.gameService.reinitialize(gameId);
+    } else if (query.hasOwnProperty('substitute_player')) {
+      try {
+        await this.gameService.substitutePlayer(gameId, query.substitute_player);
+      } catch (error) {
+        res.status(400).send({ message: error.message });
+      }
     }
 
     res.status(200).send();

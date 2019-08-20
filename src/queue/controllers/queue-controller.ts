@@ -3,6 +3,7 @@ import { inject, postConstruct } from 'inversify';
 import { controller, httpGet, response } from 'inversify-express-utils';
 import { InstanceType } from 'typegoose';
 import { WsProviderService } from '../../core';
+import { gameModel } from '../../games/models/game';
 import logger from '../../logger';
 import { Player } from '../../players/models/player';
 import { OnlinePlayerService } from '../../players/services/online-player-service';
@@ -44,6 +45,14 @@ export class QueueController {
   @httpGet('/map')
   public async getMap(@response() res: Response) {
     return res.status(200).send(this.queueService.map);
+  }
+
+  @httpGet('/substitute_requests')
+  public async getSubstituteRequests(@response() res: Response) {
+    const activeGames = await gameModel.find({ state: /launching|started/ });
+    const ret = activeGames
+      .filter(g => g.slots.filter(s => s.status === 'waiting for substitute').length > 0);
+    return res.status(200).send(ret);
   }
 
   @postConstruct()
