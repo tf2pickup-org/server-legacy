@@ -75,9 +75,15 @@ export class GameController {
       } catch (error) {
         res.status(400).send({ message: error.message });
       }
+    } else if (query.hasOwnProperty('substitute_player_cancel')) {
+      try {
+        await this.gameService.cancelSubstitutionRequest(gameId, query.substitute_player_cancel);
+      } catch (error) {
+        res.status(400).send({ message: error.message });
+      }
     }
 
-    res.status(200).send();
+    return res.status(200).send();
   }
 
 }

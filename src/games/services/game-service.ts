@@ -151,6 +151,27 @@ export class GameService {
     this.ws.emit('game updated', game.toJSON());
   }
 
+  public async cancelSubstitutionRequest(gameId: string, playerId: string) {
+    const game = await this.getGame(gameId);
+    const slot = game.slots.find(s => s.playerId === playerId);
+    if (!slot) {
+      throw new Error('this player is not a member of this game');
+    }
+
+    if (slot.status === 'replaced') {
+      throw new Error('this player has already been replaced');
+    }
+
+    if (slot.status === 'active') {
+      return;
+    }
+
+    slot.status = 'active';
+    game.markModified('slots');
+    await game.save();
+    this.ws.emit('game updated', game.toJSON());
+  }
+
   public async activeGameForPlayer(playerId: string): Promise<InstanceType<Game>> {
     return await gameModel.findOne({ state: /launching|started/, players: playerId });
   }
