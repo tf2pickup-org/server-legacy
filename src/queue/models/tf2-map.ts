@@ -12,4 +12,5 @@ export type Tf2Map =
   | 'cp_sunshine'
   | 'koth_product_rcx'
   | 'ctf_ballin_sky'
+  | 'cp_reckoner_rc2'
   ;
