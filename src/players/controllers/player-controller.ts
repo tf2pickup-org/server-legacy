@@ -73,7 +73,7 @@ export class PlayerController {
           .sort({ launchedAt: -1 })
           .limit(parseInt(limit, 10))
           .skip(parseInt(offset, 10)),
-        gameModel.count({}),
+        gameModel.find({ players: playerId }).count({}),
       ]);
 
       return res.status(200).send({ results: results.map(r => r.toJSON()), itemCount });
