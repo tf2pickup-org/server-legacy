@@ -35,17 +35,27 @@ export class GameController extends BaseHttpController {
           return this.json({ message: 'invalid value for sort parameter' }, 400);
       }
 
+      const limitValue = parseInt(limit, 10);
+      if (isNaN(limitValue)) {
+        return this.json({ message: 'limit is not a number' }, 400);
+      }
+
+      const offsetValue = parseInt(offset, 10);
+      if (isNaN(offsetValue)) {
+        return this.json({ message: 'offset is not a number' }, 400);
+      }
+
       const [ results, itemCount ] = await Promise.all([
         gameModel.find()
           .sort(sortParam)
-          .limit(parseInt(limit, 10))
-          .skip(parseInt(offset, 10)),
+          .limit(limitValue)
+          .skip(offsetValue),
         gameModel.count({}),
       ]);
 
       return this.json({ results: results.map(r => r.toJSON()), itemCount });
     } catch (error) {
-      return this.json({ message: error.message }, 400);
+      return this.json({ message: error.message }, 500);
     }
   }
 
