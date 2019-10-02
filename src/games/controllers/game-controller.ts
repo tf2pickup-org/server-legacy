@@ -1,36 +1,51 @@
 import { Response } from 'express';
 import { inject } from 'inversify';
-import { controller, httpGet, httpPut, queryParam, requestParam, response } from 'inversify-express-utils';
+import { BaseHttpController, controller, httpGet, httpPut, queryParam, requestParam,
+  response } from 'inversify-express-utils';
 import { ensureAuthenticated, ensureRole } from '../../auth';
 import { gameModel } from '../models/game';
 import { GameService } from '../services/game-service';
 
 @controller('/games')
-export class GameController {
+export class GameController extends BaseHttpController {
 
   constructor(
     @inject(GameService) private gameService: GameService,
-  ) { }
+  ) {
+    super();
+  }
 
   @httpGet('/')
-  public async getGames(@queryParam('limit') limit: string, @queryParam('offset') offset: string,
-                        @response() res: Response) {
-    if (limit === undefined || offset === undefined) {
-      return res.status(400).send({ message: 'both limit and offset properties must be specified' });
-    }
-
+  public async getGames(@queryParam('limit') limit = '10', @queryParam('offset') offset = '0',
+                        @queryParam('sort') sort = '-launched_at') {
     try {
+      let sortParam = { launchedAt: -1 };
+      switch (sort) {
+        case '-launched_at':
+        case '-launchedAt':
+          sortParam = { launchedAt: -1 };
+          break;
+
+        case 'launched_at':
+        case 'launchedAt':
+          sortParam = { launchedAt: 1 };
+          break;
+
+        default:
+          return this.json({ message: 'invalid value for sort parameter' }, 400);
+      }
+
       const [ results, itemCount ] = await Promise.all([
         gameModel.find()
-          .sort({ launchedAt: -1 })
+          .sort(sortParam)
           .limit(parseInt(limit, 10))
           .skip(parseInt(offset, 10)),
         gameModel.count({}),
       ]);
 
-      return res.status(200).send({ results: results.map(r => r.toJSON()), itemCount });
+      return this.json({ results: results.map(r => r.toJSON()), itemCount });
     } catch (error) {
-      return res.status(400).send({ message: error.message });
+      return this.json({ message: error.message }, 400);
     }
   }
 
