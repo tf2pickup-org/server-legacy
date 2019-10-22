@@ -105,8 +105,10 @@ export class GameService {
     game.save();
 
     const server = await this.gameServerService.getAssignedServer(game);
-    await cleanupServer(server);
-    await this.gameServerService.releaseServer(server);
+    if (server) {
+      await cleanupServer(server);
+      await this.gameServerService.releaseServer(server);
+    }
 
     if (interrupter) {
       interrupter.broadcast.emit('game updated', game.toJSON());
