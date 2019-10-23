@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { inject } from 'inversify';
 import { BaseHttpController, controller, httpGet, httpPut, queryParam, requestParam,
   response } from 'inversify-express-utils';
+import { Types } from 'mongoose';
 import { ensureAuthenticated, ensureRole } from '../../auth';
 import { gameModel } from '../models/game';
 import { GameService } from '../services/game-service';
@@ -60,16 +61,20 @@ export class GameController extends BaseHttpController {
   }
 
   @httpGet('/:id')
-  public async getGame(@requestParam('id') gameId: string, @response() res: Response) {
+  public async getGame(@requestParam('id') gameId: string) {
     try {
-      const game = await this.gameService.getGame(gameId);
+      if (!Types.ObjectId.isValid(gameId))  {
+        return this.json({ message: 'invalid id' }, 400);
+      }
+
+      const game = await gameModel.findById(gameId);
       if (game) {
-        return res.status(200).send(game.toJSON());
+        return this.json(game.toJSON());
       } else {
-        return res.status(404).send({ message: 'no such game' });
+        return this.json({ message: 'no such game' }, 404);
       }
     } catch (error) {
-      return res.status(400).send({ message: error.message });
+      return this.json({ message: error.message }, 500);
     }
   }
 
