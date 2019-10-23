@@ -32,7 +32,7 @@ export class GameController extends BaseHttpController {
           break;
 
         default:
-          return this.json({ message: 'invalid value for sort parameter' }, 400);
+          return this.json({ message: 'invalid value for the sort parameter' }, 400);
       }
 
       const limitValue = parseInt(limit, 10);
@@ -50,7 +50,7 @@ export class GameController extends BaseHttpController {
           .sort(sortParam)
           .limit(limitValue)
           .skip(offsetValue),
-        gameModel.count({}),
+        gameModel.estimatedDocumentCount(),
       ]);
 
       return this.json({ results: results.map(r => r.toJSON()), itemCount });
