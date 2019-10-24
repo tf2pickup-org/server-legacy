@@ -25,5 +25,12 @@
   "mumble": {
     "serverUrl": "melkor.tf",
     "channel": "tf2pickup"
+  },
+  "discord": {
+    "token": "your-discord-bot-api-token",
+    "channels": {
+      "queueNotifications": "queue-notifications-channel-id",
+      "banNotifications": "ban-notifications-channel-id"
+    }
   }
 }

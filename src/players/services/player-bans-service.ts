@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import { inject } from 'inversify';
 import { provide } from 'inversify-binding-decorators';
 import { InstanceType } from 'typegoose';
+import { DiscordBotService } from '../../discord/services/discord-bot-service';
 import { PlayerBan, playerBanModel } from '../models/player-ban';
 import { OnlinePlayerService } from './online-player-service';
 
@@ -9,6 +10,7 @@ import { OnlinePlayerService } from './online-player-service';
 export class PlayerBansService extends EventEmitter {
 
   @inject(OnlinePlayerService) private onlinePlayersService: OnlinePlayerService;
+  @inject(DiscordBotService) private discordService: DiscordBotService;
 
   public async getActiveBansForPlayer(playerId: string): Promise<PlayerBan[]> {
     return await playerBanModel.find({
@@ -27,6 +29,7 @@ export class PlayerBansService extends EventEmitter {
       socket.emit('profile update', { bans });
     });
 
+    this.discordService.notifyBan(addedBan);
     return addedBan;
   }
 

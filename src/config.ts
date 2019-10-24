@@ -34,6 +34,14 @@ export interface Config {
 
   queueConfig: string;
   requireEtf2lAccount: boolean;
+
+  discord?: {
+    token: string;
+    channels: {
+      queueNotifications: string;
+      banNotifications: string;
+    }
+  };
 }
 
 export { config };
