@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { decorate, inject } from 'inversify';
+import { inject } from 'inversify';
 import { provide } from 'inversify-binding-decorators';
 import { LogMessage, LogReceiver } from 'srcds-log-receiver';
 import { Config } from '../../config';
@@ -10,8 +10,6 @@ export interface GameEventSource {
   address: string;
   port: number;
 }
-
-decorate(provide(EventEmitter), EventEmitter);
 
 @provide(GameEventListener)
 export class GameEventListener extends EventEmitter {
