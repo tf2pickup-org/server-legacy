@@ -7,7 +7,7 @@ import { gameModel } from '../../games/models/game';
 import logger from '../../logger';
 import { Player } from '../../players/models/player';
 import { OnlinePlayerService } from '../../players/services/online-player-service';
-import { QueueConfigService, QueueService } from '../services';
+import { QueueConfigService, QueueNotificationsService, QueueService } from '../services';
 
 @controller('/queue')
 export class QueueController {
@@ -16,6 +16,7 @@ export class QueueController {
   @inject(QueueConfigService) private queueConfigService: QueueConfigService;
   @inject(WsProviderService) private wsProvider: WsProviderService;
   @inject(OnlinePlayerService) private onlinePlayerService: OnlinePlayerService;
+  @inject(QueueNotificationsService) private queueNotificationsService: QueueNotificationsService;
 
   @httpGet('/')
   public async index(@response() res: Response) {

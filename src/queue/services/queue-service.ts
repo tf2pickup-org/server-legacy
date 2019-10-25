@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events';
 import { inject } from 'inversify';
 import { provide } from 'inversify-binding-decorators';
 import { shuffle } from 'lodash';
@@ -12,7 +13,7 @@ import { Tf2Map } from '../models/tf2-map';
 import { QueueConfigService } from './queue-config-service';
 
 @provide(QueueService)
-export class QueueService {
+export class QueueService extends EventEmitter {
 
   public slots: QueueSlot[] = [];
   public state: QueueState = 'waiting';
@@ -44,6 +45,7 @@ export class QueueService {
     @inject(QueueConfigService) private queueConfigService: QueueConfigService,
     @inject(PlayerBansService) private playerBansService: PlayerBansService,
   ) {
+    super();
     this.playerBansService.on('player banned', playerId => this.kick(playerId));
     this.reset();
   }
@@ -110,6 +112,7 @@ export class QueueService {
     logger.info(`player "${player.name}" joined the queue at slot id=${slot.id} (game class: ${slot.gameClass})`);
     this.slotUpdated(slot, sender);
     setTimeout(() => this.updateState(), 0);
+    this.emit('player_join', playerId);
     return slot;
   }
 
@@ -129,6 +132,7 @@ export class QueueService {
       logger.info(`slot ${slot.id} freed`);
       this.slotUpdated(slot, sender);
       setTimeout(() => this.updateState(), 0);
+      this.emit('player_leave', playerId);
       return slot;
     } else {
       return null;
@@ -147,6 +151,7 @@ export class QueueService {
       logger.info(`slot ${slot.id} freed (kicked)`);
       this.slotUpdated(slot);
       setTimeout(() => this.updateState(), 0);
+      this.emit('player_leave', playerId);
     }
   }
 
