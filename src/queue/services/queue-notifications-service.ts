@@ -9,6 +9,7 @@ import { QueueService } from './queue-service';
 @provide(QueueNotificationsService)
 export class QueueNotificationsService {
 
+  private readonly messageDelay = 5 * 60 * 1000; // 5 minutes
   private timer: NodeJS.Timeout;
 
   constructor(
@@ -26,7 +27,7 @@ export class QueueNotificationsService {
       }
 
       this.timer = setTimeout(() => this.discordBotService.notifyQueue(currentPlayerCount, targetPlayerCount),
-        60 * 1000);
+        this.messageDelay);
     }
   }
 

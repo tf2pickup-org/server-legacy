@@ -43,20 +43,20 @@ describe('QueueNotificationsService', () => {
       jasmine.clock().uninstall();
     });
 
-    it('should notify after 1 minute', () => {
+    it('should notify after 5 minutes', () => {
       const spy = spyOn(discordBotService, 'notifyQueue');
       queueService.emit('player_join', 'fake_id');
       expect(spy).not.toHaveBeenCalled();
-      jasmine.clock().tick(60 * 1000);
+      jasmine.clock().tick(5 * 60 * 1000);
       expect(spy).toHaveBeenCalledWith(6, 12);
     });
 
     it('should notify only once if there are two consecutive player_join events', () => {
       const spy = spyOn(discordBotService, 'notifyQueue');
       queueService.emit('player_join', 'fake_id');
-      jasmine.clock().tick(10 * 1000);
+      jasmine.clock().tick(4 * 60 * 1000);
       queueService.emit('player_join', 'fake_id');
-      jasmine.clock().tick(50 * 1000);
+      jasmine.clock().tick(4 * 60 * 1000);
       expect(spy).not.toHaveBeenCalled();
       jasmine.clock().tick(60 * 1000);
       expect(spy).toHaveBeenCalledTimes(1);
@@ -66,7 +66,7 @@ describe('QueueNotificationsService', () => {
       queueService.playerCount = 5;
       const spy = spyOn(discordBotService, 'notifyQueue');
       queueService.emit('player_join', 'fake_id');
-      jasmine.clock().tick(60 * 1000);
+      jasmine.clock().tick(5 * 60 * 1000);
       expect(spy).not.toHaveBeenCalled();
     });
   });
