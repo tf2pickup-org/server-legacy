@@ -31,7 +31,7 @@ export class DiscordBotService {
 
     const channel = this.client.channels.get(this.config.discord.channels.queueNotifications) as discord.TextChannel;
     if (channel) {
-      channel.send(`<@636935020627361802> ${currentPlayerCount}/${targetPlayerCount} in the queue.
+      channel.send(`<@&636935020627361802> ${currentPlayerCount}/${targetPlayerCount} in the queue.
       Go to ${this.config.clientUrl} and don't miss the next game!`);
     } else {
       logger.warn(`channel id ${this.config.discord.channels.queueNotifications} not found`);
