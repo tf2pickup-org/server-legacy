@@ -7,7 +7,7 @@ export class HallOfFameService {
   private readonly standardAggregateOptions = [
     { $sort: { count: -1 } },
     { $limit: 10 },
-    { $replaceWith: { player: '$_id', count: '$count' } },
+    { $project: { player: '$_id', count: 1, _id: 0 } },
   ];
 
   public async getMostActivePlayers() {
