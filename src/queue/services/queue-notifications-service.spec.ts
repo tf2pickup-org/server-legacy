@@ -69,5 +69,23 @@ describe('QueueNotificationsService', () => {
       jasmine.clock().tick(5 * 60 * 1000);
       expect(spy).not.toHaveBeenCalled();
     });
+
+    it('should not notify on full queue', () => {
+      queueService.playerCount = 12;
+      const spy = spyOn(discordBotService, 'notifyQueue');
+      queueService.emit('player_join', 'fake_id');
+      jasmine.clock().tick(5 * 60 * 1000);
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('should not notify if the player count drops below the required threshold', () => {
+      queueService.playerCount = 6;
+      const spy = spyOn(discordBotService, 'notifyQueue');
+      queueService.emit('player_join', 'fake_id');
+      jasmine.clock().tick(4 * 60 * 1000);
+      queueService.playerCount = 5;
+      jasmine.clock().tick(5 * 60 * 1000);
+      expect(spy).not.toHaveBeenCalled();
+    });
   });
 });

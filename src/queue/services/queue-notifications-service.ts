@@ -16,18 +16,21 @@ export class QueueNotificationsService {
     @inject(QueueService) private queueService: QueueService,
     @inject(DiscordBotService) private discordBotService: DiscordBotService,
   ) {
-    this.queueService.on('player_join', () =>
-      this.maybeNotify(this.queueService.playerCount, this.queueService.requiredPlayerCount));
+    this.queueService.on('player_join', () => this.triggerNotifier());
   }
 
-  private maybeNotify(currentPlayerCount: number, targetPlayerCount: number) {
-    if (currentPlayerCount >= (targetPlayerCount * 0.5)) {
-      if (this.timer) {
-        clearTimeout(this.timer);
-      }
+  private triggerNotifier() {
+    if (this.timer) {
+      clearTimeout(this.timer);
+    }
 
-      this.timer = setTimeout(() => this.discordBotService.notifyQueue(currentPlayerCount, targetPlayerCount),
-        this.messageDelay);
+    this.timer = setTimeout(() => this.maybeNotify(), this.messageDelay);
+  }
+
+  private maybeNotify() {
+    if (this.queueService.playerCount >= (this.queueService.requiredPlayerCount * 0.5) &&
+        this.queueService.playerCount < this.queueService.requiredPlayerCount) {
+      this.discordBotService.notifyQueue(this.queueService.playerCount, this.queueService.requiredPlayerCount);
     }
   }
 
