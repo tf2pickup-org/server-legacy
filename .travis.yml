@@ -3,4 +3,5 @@ node_js:
   - '12'
   - 'node'
 
-
+before_script:
+  - cp config.sample.json config.json
