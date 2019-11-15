@@ -3,13 +3,13 @@ import { buildProviderModule } from 'inversify-binding-decorators';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { connect } from 'mongoose';
 import { container } from '../../container';
-import { QueueService } from '../../queue';
+import { QueueConfigService } from '../../queue';
 import { Player, playerModel } from '../models/player';
 import { playerSkillModel } from '../models/player-skill';
 import { PlayerSkillService } from './player-skill-service';
 
-class QueueServiceStub {
-  public config: {
+class QueueConfigServiceStub {
+  public queueConfig = {
     classes: [
       { name: 'soldier', count: 1 },
     ],
@@ -17,7 +17,7 @@ class QueueServiceStub {
 }
 
 describe('PlayerSkillService', () => {
-  const queueService = new QueueServiceStub();
+  const queueConfigService = new QueueConfigServiceStub();
   let mongod: MongoMemoryServer;
   let service: PlayerSkillService;
 
@@ -33,7 +33,7 @@ describe('PlayerSkillService', () => {
 
   beforeEach(() => {
     container.snapshot();
-    container.rebind(QueueService).toConstantValue(queueService as unknown as QueueService);
+    container.rebind(QueueConfigService).toConstantValue(queueConfigService as unknown as QueueConfigService);
     service = container.resolve(PlayerSkillService);
   });
 
@@ -53,9 +53,8 @@ describe('PlayerSkillService', () => {
       expect(skill.skill.get('soldier')).toEqual(5);
     });
 
-    xit('should initialize default skill', async () => {
+    it('should initialize default skill', async () => {
       const player2 = await playerModel.create({ name: 'FAKE_NAME_2', steamId: 'FAKE_STEAM_ID_2' });
-      console.log(player2.joinedAt);
       const skill = await service.getPlayerSkill(player2._id);
       expect(skill).toBeTruthy();
       expect(skill.skill.get('soldier')).toEqual(1);
