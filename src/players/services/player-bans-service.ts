@@ -1,7 +1,7 @@
+import { DocumentType } from '@typegoose/typegoose';
 import { EventEmitter } from 'events';
 import { inject } from 'inversify';
 import { provide } from 'inversify-binding-decorators';
-import { InstanceType } from 'typegoose';
 import { DiscordBotService } from '../../discord/services/discord-bot-service';
 import { PlayerBan, playerBanModel } from '../models/player-ban';
 import { OnlinePlayerService } from './online-player-service';
@@ -21,7 +21,7 @@ export class PlayerBansService extends EventEmitter {
     });
   }
 
-  public async addPlayerBan(playerBan: Partial<PlayerBan>): Promise<InstanceType<PlayerBan>> {
+  public async addPlayerBan(playerBan: Partial<PlayerBan>): Promise<DocumentType<PlayerBan>> {
     const addedBan = await playerBanModel.create(playerBan);
     this.emit('player banned', playerBan.player);
     this.onlinePlayersService.getSocketsForPlayer(addedBan.player.toString()).forEach(async socket => {
@@ -33,7 +33,7 @@ export class PlayerBansService extends EventEmitter {
     return addedBan;
   }
 
-  public async revokeBan(banId: string): Promise<InstanceType<PlayerBan>> {
+  public async revokeBan(banId: string): Promise<DocumentType<PlayerBan>> {
     const ban = await playerBanModel.findById(banId);
     ban.end = new Date();
     await ban.save();

@@ -1,10 +1,10 @@
-import { mapProp, prop, Ref, Typegoose } from 'typegoose';
+import { getModelForClass, mapProp, prop, Ref } from '@typegoose/typegoose';
 import { renameId } from '../../utils';
 import { Player } from './player';
 
-export class PlayerSkill extends Typegoose {
+export class PlayerSkill {
 
-  @prop({ ref: Player })
+  @prop({ ref: 'Player' })
   public player?: Ref<Player>;
 
   @mapProp({ of: Number })
@@ -12,7 +12,7 @@ export class PlayerSkill extends Typegoose {
 
 }
 
-export const playerSkillModel = new PlayerSkill().getModelForClass(PlayerSkill, {
+export const playerSkillModel = getModelForClass(PlayerSkill, {
   schemaOptions: {
     toJSON: {
       versionKey: false,

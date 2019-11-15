@@ -1,6 +1,6 @@
+import { DocumentType } from '@typegoose/typegoose';
 import { inject } from 'inversify';
 import { provide } from 'inversify-binding-decorators';
-import { InstanceType } from 'typegoose';
 import { Config } from '../../config';
 import { WsProviderService } from '../../core';
 import { GameServer } from '../../game-servers/models/game-server';
@@ -33,15 +33,15 @@ export class GameService {
     this.gameEventListener.on('logs uploaded', async ({ server, logsUrl }) => this.onLogsUploaded(server, logsUrl));
   }
 
-  public async getAllGames(): Promise<Array<InstanceType<Game>>> {
+  public async getAllGames(): Promise<Array<DocumentType<Game>>> {
     return await gameModel.find().sort({ launchedAt: -1 });
   }
 
-  public async getGame(gameId: string): Promise<InstanceType<Game>> {
+  public async getGame(gameId: string): Promise<DocumentType<Game>> {
     return await gameModel.findById(gameId);
   }
 
-  public async create(queueSlots: QueueSlot[], queueConfig: QueueConfig, map: string): Promise<InstanceType<Game>> {
+  public async create(queueSlots: QueueSlot[], queueConfig: QueueConfig, map: string): Promise<DocumentType<Game>> {
     queueSlots.forEach(slot => {
       if (!slot.playerId) {
         throw new Error('cannot create the game with queue not being full');
@@ -72,7 +72,7 @@ export class GameService {
     return game;
   }
 
-  public async launch(game: InstanceType<Game>) {
+  public async launch(game: DocumentType<Game>) {
     if (game.state === 'interrupted' || game.state === 'ended') {
       return;
     }
@@ -174,11 +174,11 @@ export class GameService {
     this.ws.emit('game updated', game.toJSON());
   }
 
-  public async activeGameForPlayer(playerId: string): Promise<InstanceType<Game>> {
+  public async activeGameForPlayer(playerId: string): Promise<DocumentType<Game>> {
     return await gameModel.findOne({ state: /launching|started/, players: playerId });
   }
 
-  public async resolveMumbleUrl(game: InstanceType<Game>, server: GameServer) {
+  public async resolveMumbleUrl(game: DocumentType<Game>, server: GameServer) {
     const mumbleUrl =
       `mumble://${this.config.mumble.serverUrl}/${this.config.mumble.channel}/${server.mumbleChannelName}`;
     game.mumbleUrl = mumbleUrl;
@@ -223,7 +223,7 @@ export class GameService {
     }
   }
 
-  private async updateConnectString(game: InstanceType<Game>, connectString: string) {
+  private async updateConnectString(game: DocumentType<Game>, connectString: string) {
     game.connectString = connectString;
     await game.save();
     this.ws.emit('game updated', game.toJSON());

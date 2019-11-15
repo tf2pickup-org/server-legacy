@@ -1,7 +1,7 @@
+import { DocumentType } from '@typegoose/typegoose';
 import { buildProviderModule } from 'inversify-binding-decorators';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { connect } from 'mongoose';
-import { InstanceType } from 'typegoose';
 import { container } from '../../container';
 import { QueueService } from '../../queue';
 import { Player, playerModel } from '../models/player';
@@ -40,7 +40,7 @@ describe('PlayerSkillService', () => {
   afterEach(() => container.restore());
 
   describe('#getPlayerSkill()', () => {
-    let player: InstanceType<Player>;
+    let player: DocumentType<Player>;
 
     beforeAll(async () => {
       player = await playerModel.create({ name: 'FAKE_NAME', steamId: 'FAKE_STEAM_ID' });

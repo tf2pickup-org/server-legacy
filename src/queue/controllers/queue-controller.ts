@@ -1,7 +1,7 @@
+import { DocumentType } from '@typegoose/typegoose';
 import { Response } from 'express';
 import { inject, postConstruct } from 'inversify';
 import { controller, httpGet, response } from 'inversify-express-utils';
-import { InstanceType } from 'typegoose';
 import { WsProviderService } from '../../core';
 import { gameModel } from '../../games/models/game';
 import logger from '../../logger';
@@ -60,7 +60,7 @@ export class QueueController {
   public setupWs() {
     this.wsProvider.ws.on('connection', socket => {
       if (socket.request.user.logged_in) {
-        const player = socket.request.user as InstanceType<Player>;
+        const player = socket.request.user as DocumentType<Player>;
 
         socket.on('join queue', async (slotId: number, done) => {
           try {

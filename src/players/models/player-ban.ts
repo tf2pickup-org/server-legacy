@@ -1,9 +1,9 @@
+import { getModelForClass, prop, Ref } from '@typegoose/typegoose';
 import { Schema } from 'mongoose';
-import { prop, Ref, Typegoose } from 'typegoose';
 import { renameId } from '../../utils';
 import { Player } from './player';
 
-export class PlayerBan extends Typegoose {
+export class PlayerBan {
   public id?: Schema.Types.ObjectId;
 
   @prop({ ref: Player, required: true })
@@ -23,7 +23,7 @@ export class PlayerBan extends Typegoose {
 
 }
 
-export const playerBanModel = new PlayerBan().getModelForClass(PlayerBan, {
+export const playerBanModel = getModelForClass(PlayerBan, {
   schemaOptions: {
     toJSON: {
       versionKey: false,

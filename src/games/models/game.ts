@@ -1,11 +1,11 @@
-import { Document, Schema } from 'mongoose';
-import { arrayProp, mapProp, pre, prop, Ref, Typegoose } from 'typegoose';
+import { arrayProp, DocumentType, getModelForClass, mapProp, pre, prop, Ref } from '@typegoose/typegoose';
+import { Schema } from 'mongoose';
 import { Player } from '../../players/models/player';
 import { renameId } from '../../utils';
 import { GamePlayer } from './game-player';
 import { GameState } from './game-state';
 
-function removeAssignedSkills(doc: Document, ret: any) {
+function removeAssignedSkills(doc: DocumentType<Game>, ret: any) {
   ret = renameId(doc, ret);
   delete ret.assignedSkills;
   return ret;
@@ -23,7 +23,7 @@ function removeAssignedSkills(doc: Document, ret: any) {
 
   next();
 })
-export class Game extends Typegoose {
+export class Game {
   @prop({ default: () => new Date() })
   public launchedAt?: Date;
 
@@ -33,11 +33,11 @@ export class Game extends Typegoose {
   @mapProp({ of: String })
   public teams?: Map<string, string>;
 
-  @arrayProp({ itemsRef: Player })
+  @arrayProp({ items: Player })
   public players?: Array<Ref<Player>>;
 
-  @arrayProp({ items: Schema.Types.Mixed, required: true })
-  public slots!: GamePlayer[];
+  @arrayProp({ items: GamePlayer })
+  public slots?: GamePlayer[];
 
   @mapProp({ of: Number })
   public assignedSkills?: Map<string, number>;
@@ -62,7 +62,7 @@ export class Game extends Typegoose {
 
 }
 
-export const gameModel = new Game().getModelForClass(Game, {
+export const gameModel = getModelForClass(Game, {
   schemaOptions: {
     toJSON: {
       versionKey: false,

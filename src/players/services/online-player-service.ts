@@ -1,7 +1,7 @@
+import { DocumentType } from '@typegoose/typegoose';
 import { EventEmitter } from 'events';
-import { inject, LazyServiceIdentifer } from 'inversify';
+import { inject } from 'inversify';
 import { provide } from 'inversify-binding-decorators';
-import { InstanceType } from 'typegoose';
 import { WsProviderService } from '../../core/services/ws-provider-service';
 import { Player } from '../models/player';
 
@@ -20,7 +20,7 @@ export class OnlinePlayerService extends EventEmitter {
 
     this.wsProvider.ws.on('connection', socket => {
       if (socket.request.user.logged_in) {
-        const player = socket.request.user as InstanceType<Player>;
+        const player = socket.request.user as DocumentType<Player>;
         const sockets = this.sockets.get(player.id) || [];
         this.sockets.set(player.id, [ ...sockets, socket ]);
 

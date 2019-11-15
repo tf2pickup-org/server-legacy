@@ -1,8 +1,7 @@
-import { Document } from 'mongoose';
-import { arrayProp, pre, prop, Typegoose } from 'typegoose';
+import { arrayProp, DocumentType, getModelForClass, pre, prop } from '@typegoose/typegoose';
 import { renameId } from '../../utils';
 
-function removeRcon(doc: Document, ret: any) {
+function removeRcon(doc: DocumentType<GameServer>, ret: any) {
   ret = renameId(doc, ret);
   delete ret.rconPassword;
   return ret;
@@ -21,7 +20,7 @@ function removeRcon(doc: Document, ret: any) {
 
   next();
 })
-export class GameServer extends Typegoose {
+export class GameServer {
   @prop({ default: () => new Date() })
   public createdAt?: Date;
 
@@ -47,7 +46,7 @@ export class GameServer extends Typegoose {
   public mumbleChannelName?: string;
 }
 
-export const gameServerModel = new GameServer().getModelForClass(GameServer, {
+export const gameServerModel = getModelForClass(GameServer, {
   schemaOptions: {
     toJSON: {
       versionKey: false,

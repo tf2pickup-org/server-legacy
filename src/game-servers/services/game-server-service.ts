@@ -1,7 +1,7 @@
+import { DocumentType } from '@typegoose/typegoose';
 import { resolve as resolveCb } from 'dns';
 import { postConstruct } from 'inversify';
 import { provide } from 'inversify-binding-decorators';
-import { InstanceType } from 'typegoose';
 import { promisify } from 'util';
 import { Game } from '../../games/models';
 import logger from '../../logger';
@@ -14,15 +14,15 @@ const resolve = promisify(resolveCb);
 @provide(GameServerService)
 export class GameServerService {
 
-  public async getAllGameServers(): Promise<Array<InstanceType<GameServer>>> {
+  public async getAllGameServers(): Promise<Array<DocumentType<GameServer>>> {
     return await gameServerModel.find();
   }
 
-  public async getGameServer(gameServerId: string): Promise<InstanceType<GameServer>> {
+  public async getGameServer(gameServerId: string): Promise<DocumentType<GameServer>> {
     return await gameServerModel.findById(gameServerId);
   }
 
-  public async addGameServer(gameServer: GameServer): Promise<InstanceType<GameServer>> {
+  public async addGameServer(gameServer: GameServer): Promise<DocumentType<GameServer>> {
     await verifyServer(gameServer);
     gameServer.isOnline = true;
 
@@ -84,25 +84,25 @@ export class GameServerService {
     });
   }
 
-  public async getAssignedGame(server: GameServer): Promise<InstanceType<Game>> {
+  public async getAssignedGame(server: GameServer): Promise<DocumentType<Game>> {
     const assignment = await gameServerAssignmentModel
       .findOne({ server }, null, { sort: { assignedAt: -1 }})
       .populate('game');
 
     if (assignment) {
-      return assignment.game as InstanceType<Game>;
+      return assignment.game as DocumentType<Game>;
     } else {
       return null;
     }
   }
 
-  public async getAssignedServer(game: Game): Promise<InstanceType<GameServer>> {
+  public async getAssignedServer(game: Game): Promise<DocumentType<GameServer>> {
     const assignment = await gameServerAssignmentModel
       .findOne({ game })
       .populate('server');
 
     if (assignment) {
-      return assignment.server as InstanceType<GameServer>;
+      return assignment.server as DocumentType<GameServer>;
     } else {
       return null;
     }
