@@ -3,7 +3,6 @@ import { Rcon } from 'rcon-client';
 import { config } from '../../config';
 import { GameServer, ServerInfoForPlayer } from '../../game-servers/models';
 import logger from '../../logger';
-import { PlayerService } from '../../players';
 import { Player, playerModel } from '../../players/models/player';
 import { Game } from '../models';
 
@@ -14,12 +13,13 @@ export async function configureServer(server: GameServer,
   logger.debug(`[${server.name}] using rcon password ${server.rconPassword}`);
 
   try {
-    const rcon = new Rcon({ packetResponseTimeout: 30000 });
-    await rcon.connect({
+    const rcon = new Rcon({
       host: server.address,
       port: server.port,
       password: server.rconPassword,
+      timeout: 30000,
     });
+    await rcon.connect();
 
     const logAddress = `${config.logRelay.address}:${config.logRelay.port}`;
     logger.debug(`[${server.name}] adding log address ${logAddress}...`);

@@ -5,12 +5,13 @@ import logger from '../../logger';
 
 export async function cleanupServer(server: GameServer) {
   try {
-    const rcon = new Rcon({ packetResponseTimeout: 30000 });
-    await rcon.connect({
+    const rcon = new Rcon({
       host: server.address,
       port: server.port,
       password: server.rconPassword,
+      timeout: 30000,
     });
+    await rcon.connect();
 
     const logAddress = `${config.logRelay.address}:${config.logRelay.port}`;
     logger.debug(`[${server.name}] removing log address ${logAddress}...`);
