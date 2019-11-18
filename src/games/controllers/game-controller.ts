@@ -1,7 +1,5 @@
-import { Response } from 'express';
 import { inject } from 'inversify';
-import { BaseHttpController, controller, httpGet, httpPut, queryParam, requestParam,
-  response } from 'inversify-express-utils';
+import { BaseHttpController, controller, httpGet, httpPut, queryParam, requestParam } from 'inversify-express-utils';
 import { Types } from 'mongoose';
 import { ensureAuthenticated, ensureRole } from '../../auth';
 import { gameModel } from '../models/game';
@@ -20,7 +18,7 @@ export class GameController extends BaseHttpController {
   public async getGames(@queryParam('limit') limit = '10', @queryParam('offset') offset = '0',
                         @queryParam('sort') sort = '-launched_at') {
     try {
-      let sortParam = { launchedAt: -1 };
+      let sortParam: { launchedAt: 1 | -1 };
       switch (sort) {
         case '-launched_at':
         case '-launchedAt':
@@ -79,22 +77,21 @@ export class GameController extends BaseHttpController {
   }
 
   @httpGet('/:id/skills', ensureAuthenticated, ensureRole('admin', 'super-user'))
-  public async getGameSkills(@requestParam('id') gameId: string, @response() res: Response) {
+  public async getGameSkills(@requestParam('id') gameId: string) {
     try {
       const game = await this.gameService.getGame(gameId);
       if (game) {
-        return res.status(200).send(game.assignedSkills);
+        return this.json(game.assignedSkills);
       } else {
-        return res.status(404).send({ message: 'no such game' });
+        return this.json({ message: 'no such game' }, 404);
       }
     } catch (error) {
-      return res.status(400).send({ message: error.message });
+      return this.json({ message: error.message }, 500);
     }
   }
 
   @httpPut('/:id', ensureAuthenticated, ensureRole('admin', 'super-user'))
-  public async takeAdminAction(@requestParam('id') gameId: string, @queryParam() query: any,
-                               @response() res: Response) {
+  public async takeAdminAction(@requestParam('id') gameId: string, @queryParam() query: any) {
     if (query.hasOwnProperty('force_end')) {
       this.gameService.forceEnd(gameId);
     } else if (query.hasOwnProperty('reinitialize_server')) {
@@ -103,17 +100,17 @@ export class GameController extends BaseHttpController {
       try {
         await this.gameService.substitutePlayer(gameId, query.substitute_player);
       } catch (error) {
-        res.status(400).send({ message: error.message });
+        return this.json({ message: error.message }, 400);
       }
     } else if (query.hasOwnProperty('substitute_player_cancel')) {
       try {
         await this.gameService.cancelSubstitutionRequest(gameId, query.substitute_player_cancel);
       } catch (error) {
-        res.status(400).send({ message: error.message });
+        return this.json({ message: error.message }, 400);
       }
     }
 
-    return res.status(200).send();
+    return this.json({ });
   }
 
 }
