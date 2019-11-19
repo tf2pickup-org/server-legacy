@@ -1,5 +1,4 @@
 import { arrayProp, DocumentType, getModelForClass, mapProp, pre, prop, Ref } from '@typegoose/typegoose';
-import { Schema } from 'mongoose';
 import { Player } from '../../players/models/player';
 import { renameId } from '../../utils';
 import { GamePlayer } from './game-player';
@@ -33,7 +32,7 @@ export class Game {
   @mapProp({ of: String })
   public teams?: Map<string, string>;
 
-  @arrayProp({ items: Player })
+  @arrayProp({ ref: 'Player' })
   public players?: Array<Ref<Player>>;
 
   @arrayProp({ items: GamePlayer })

@@ -6,10 +6,10 @@ import { Player } from './player';
 export class PlayerBan {
   public id?: Schema.Types.ObjectId;
 
-  @prop({ ref: Player, required: true })
+  @prop({ ref: 'Player', required: true })
   public player!: Ref<Player>;
 
-  @prop({ ref: Player, required: true })
+  @prop({ ref: 'Player', required: true })
   public admin!: Ref<Player>;
 
   @prop({ required: true })
