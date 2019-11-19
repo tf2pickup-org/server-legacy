@@ -17,10 +17,11 @@ export class ProfileController {
 
   @httpGet('/')
   public async getProfile(@request() req: Request, @response() res: Response) {
-    const activeGame = await this.gameService.activeGameForPlayer(req.user.id);
-    const bans = await this.playerBansService.getActiveBansForPlayer(req.user.id);
+    const user = req.user as { id: string, toJSON: () => any };
+    const activeGame = await this.gameService.activeGameForPlayer(user.id);
+    const bans = await this.playerBansService.getActiveBansForPlayer(user.id);
     return res.status(200).send({
-      ...req.user.toJSON(),
+      ...user.toJSON(),
       activeGameId: activeGame ? activeGame.id : null,
       bans,
     });
@@ -29,7 +30,8 @@ export class ProfileController {
   @httpPut('/')
   public async acceptTerms(@queryParam() query: any, @request() req: Request, @response() res: Response) {
     if (query.hasOwnProperty('accept_terms')) {
-      await this.profileService.acceptTerms(req.user.id);
+      const user = req.user as { id: string };
+      await this.profileService.acceptTerms(user.id);
     }
 
     return res.status(204).send();

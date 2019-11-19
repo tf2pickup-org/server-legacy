@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { inject } from 'inversify';
 import { controller, httpGet, httpPatch, httpPost, httpPut, queryParam, request,
   requestBody, requestParam, response} from 'inversify-express-utils';
+import { ObjectId } from 'mongodb';
 import { ensureAuthenticated, ensureRole } from '../../auth';
 import { gameModel } from '../../games/models/game';
 import { Player, playerModel } from '../models/player';
@@ -37,7 +38,7 @@ export class PlayerController {
         return res.status(404).send({ message: 'no such player' });
       }
     } catch (error) {
-      return res.status(400).send({ message: error.message });
+      return res.status(500).send({ message: error.message });
     }
   }
 
@@ -73,12 +74,12 @@ export class PlayerController {
           .sort({ launchedAt: -1 })
           .limit(parseInt(limit, 10))
           .skip(parseInt(offset, 10)),
-        gameModel.find({ players: playerId }).count({}),
+        gameModel.find({ players: playerId }).countDocuments(),
       ]);
 
       return res.status(200).send({ results: results.map(r => r.toJSON()), itemCount });
     } catch (error) {
-      return res.status(400).send({ message: error.message });
+      return res.status(500).send({ message: error.message });
     }
   }
 
@@ -123,7 +124,8 @@ export class PlayerController {
   public async addPlayerBan(@requestParam('id') playerId: string, @requestBody() ban: PlayerBan,
                             @request() req: Request, @response() res: Response) {
     try {
-      const admin = req.user.id;
+      const user = req.user as { id: string };
+      const admin = new ObjectId(user.id);
       const addedBan = await this.playerBansService.addPlayerBan({ ...ban, admin });
       return res.status(201).send(addedBan.toJSON());
     } catch (error) {
