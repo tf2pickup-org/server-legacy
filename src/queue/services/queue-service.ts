@@ -174,8 +174,8 @@ export class QueueService extends EventEmitter {
   }
 
   public async voteForMapChange(playerId: string, value: boolean, voter?: SocketIO.Socket) {
-    if (this.state !== 'waiting') {
-      throw new Error('can vote only when waiting');
+    if (this.state === 'launching') {
+      throw new Error('can\'t vote now');
     }
 
     const slot = this.slots.find(s => s.playerId === playerId);
