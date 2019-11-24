@@ -14,11 +14,11 @@ export class DiscordBotService {
   constructor(
     @inject('config') private config: Config,
   ) {
-    this.client.on('ready', () => {
-      logger.info(`Discord: logged in as ${this.client.user.tag}`);
-    });
-
     if (this.config.discord) {
+      this.client.on('ready', () => {
+        logger.info(`Discord: logged in as ${this.client.user.tag}`);
+      });
+
       this.client.login(this.config.discord.token)
         .catch(e => logger.error(e));
     }
