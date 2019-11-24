@@ -97,6 +97,15 @@ export class QueueController {
             done({ error: error.message });
           }
         });
+
+        socket.on('mark friend', async (friendId: string, done) => {
+          try {
+            const slot = await this.queueService.markFriend(player.id, friendId, socket);
+            done({ value: slot });
+          } catch (error) {
+            done({ error: error.message });
+          }
+        });
       }
     });
     logger.debug('queue ws calls setup');

@@ -28,15 +28,15 @@ export class QueueService extends EventEmitter {
   }
 
   public get playerCount() {
-    return this.slots.reduce((prev, curr) => curr.playerId ? prev + 1 : prev, 0);
+    return this.slots.filter(s => !!s.playerId).length;
   }
 
   public get readyPlayerCount() {
-    return this.slots.reduce((prev, curr) => curr.playerReady ? prev + 1 : prev, 0);
+    return this.slots.filter(s => s.playerReady).length;
   }
 
   public get mapChangeVoterCount() {
-    return this.slots.reduce((prev, curr) => curr.votesForMapChange ? prev + 1 : prev, 0);
+    return this.slots.filter(s => s.votesForMapChange).length;
   }
 
   constructor(
@@ -89,15 +89,19 @@ export class QueueService extends EventEmitter {
       throw new Error('slot already taken');
     }
 
-    let votesForMapChange = false;
+    let tmpAttributes = {
+      votesForMapChange: false,
+      friend: null,
+    };
 
     // remove player from any slot he could be occupying
     this.slots.forEach(s => {
       if (s.playerId === playerId) {
         delete s.playerId;
         s.playerReady = false;
-        votesForMapChange = s.votesForMapChange;
+        tmpAttributes = { votesForMapChange: s.votesForMapChange, friend: s.friend };
         s.votesForMapChange = false;
+        delete s.friend;
         this.slotUpdated(s);
       }
     });
@@ -105,12 +109,16 @@ export class QueueService extends EventEmitter {
     slot.playerId = playerId;
     if (this.state === 'ready') {
       slot.playerReady = true;
-    } else {
-      slot.votesForMapChange = votesForMapChange;
+    }
+
+    Object.assign(slot, tmpAttributes);
+    if (slot.gameClass !== 'medic') {
+      delete slot.friend;
     }
 
     logger.info(`player "${player.name}" joined the queue at slot id=${slot.id} (game class: ${slot.gameClass})`);
     this.slotUpdated(slot, sender);
+
     setTimeout(() => this.updateState(), 0);
     this.emit('player_join', playerId);
     return slot;
@@ -129,6 +137,7 @@ export class QueueService extends EventEmitter {
 
       delete slot.playerId;
       slot.votesForMapChange = false;
+      delete slot.friend;
       logger.info(`slot ${slot.id} freed`);
       this.slotUpdated(slot, sender);
       setTimeout(() => this.updateState(), 0);
@@ -148,6 +157,7 @@ export class QueueService extends EventEmitter {
 
       delete slot.playerId;
       slot.votesForMapChange = false;
+      delete slot.friend;
       logger.info(`slot ${slot.id} freed (kicked)`);
       this.slotUpdated(slot);
       setTimeout(() => this.updateState(), 0);
@@ -187,6 +197,30 @@ export class QueueService extends EventEmitter {
     } else {
       throw new Error('player is not in the queue');
     }
+  }
+
+  public async markFriend(playerId: string, friendId: string, sender?: SocketIO.Socket) {
+    if (this.state === 'launching') {
+      throw new Error('can\'t mark friends now');
+    }
+
+    const slot = this.slots.find(s => s.playerId === playerId);
+    if (!slot) {
+      throw new Error('player is not in the queue');
+    }
+
+    if (slot.gameClass !== 'medic') { // todo make this configurable
+      throw new Error('only medics can mark friends');
+    }
+
+    const friendSlot = this.slots.find(s => s.playerId === friendId);
+    if (friendSlot && friendSlot.gameClass === slot.gameClass) {
+      throw new Error('cannot mark this player as a friend');
+    }
+
+    slot.friend = friendId;
+    this.slotUpdated(slot, sender);
+    return slot;
   }
 
   public async validateAllPlayers() {
@@ -315,6 +349,7 @@ export class QueueService extends EventEmitter {
   private removePlayerFromSlot(slot: QueueSlot) {
     delete slot.playerId;
     slot.votesForMapChange = false;
+    delete slot.friend;
     logger.info(`slot ${slot.id} freed`);
     this.slotUpdated(slot);
     setTimeout(() => this.updateState(), 0);
