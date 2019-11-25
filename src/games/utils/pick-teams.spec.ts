@@ -14,11 +14,13 @@ describe('pickTeams', () => {
       const gamePlayers = pickTeams(players, gameClasses);
       expect(gamePlayers.length).toBe(4);
       expect(gamePlayers.filter(p => p.teamId === '0').length).toBe(2);
-      expect(gamePlayers.find(p =>  p.playerId === '0').teamId).toBe('0');
-      expect(gamePlayers.find(p =>  p.playerId === '3').teamId).toBe('0');
       expect(gamePlayers.filter(p => p.teamId === '1').length).toBe(2);
-      expect(gamePlayers.find(p =>  p.playerId === '1').teamId).toBe('1');
-      expect(gamePlayers.find(p =>  p.playerId === '2').teamId).toBe('1');
+
+      expect(gamePlayers.find(p => p.playerId === '0').teamId)
+        .toEqual(gamePlayers.find(p => p.playerId === '3').teamId);
+
+      expect(gamePlayers.find(p => p.playerId === '1').teamId)
+        .toEqual(gamePlayers.find(p => p.playerId === '2').teamId);
     });
 
     it('for 12 slots', () => {

@@ -89,9 +89,13 @@ export function pickTeams(players: PlayerSlot[], gameClasses: string[]): GamePla
   });
 
   allCombinations.sort((a, b) => a.skillDifference - b.skillDifference);
-  const selected = allCombinations[0];
+  const lowestSkillDifference = allCombinations[0].skillDifference;
+  const possibleTeams = allCombinations.filter(c => c.skillDifference === lowestSkillDifference);
+  logger.debug(`there are ${possibleTeams.length} possible teams with lowest skill difference`);
 
-  logger.info(`team average kill difference = ${selected.skillDifference}`);
+  const selected = possibleTeams[Math.floor(Math.random() * possibleTeams.length)];
+
+  logger.info(`team average skill difference = ${selected.skillDifference}`);
 
   return Object.keys(selected)
     .map(key => {
