@@ -132,7 +132,7 @@ export class QueueService extends EventEmitter {
     const slot = this.slots.find(s => s.playerId === playerId);
     if (slot) {
       if (slot.playerReady && (this.state === 'ready' || this.state === 'launching')) {
-        throw new Error('cannot unready when already readied up');
+        throw new Error('cannot unready');
       }
 
       delete slot.playerId;
