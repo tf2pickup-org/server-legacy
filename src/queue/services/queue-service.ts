@@ -319,7 +319,19 @@ export class QueueService extends EventEmitter {
   }
 
   private async launch() {
-    await this.gameService.create(this.slots, this.queueConfigService.queueConfig, this.map);
+    const friends = this.slots
+      .filter(s => s.gameClass === 'medic')
+      .filter(s => !!s.friend)
+      .map(s => {
+        const friend = this.slots.find(f => f.playerId === s.friend);
+        if (friend.gameClass === 'medic') {
+          return null;
+        } else {
+          return [ s.playerId, friend.playerId ];
+        }
+      })
+      .filter(p => !!p);
+    await this.gameService.create(this.slots, this.queueConfigService.queueConfig, this.map, friends);
     setTimeout(() => this.reset(), 0);
   }
 
