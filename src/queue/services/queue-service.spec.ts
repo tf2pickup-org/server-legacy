@@ -17,6 +17,7 @@ const wsProviderServiceStub = {
 
 const gameServiceStub = {
   activeGameForPlayer: () => null,
+  create: (queueSlots, queueConfig, map, friends) => null,
 };
 
 const queueConfigServiceStub = {
@@ -29,7 +30,7 @@ const queueConfigServiceStub = {
     ],
     teamCount: 2,
     maps: ['fake_map_1', 'fake_map_2'],
-    readyUpTimeout: 30,
+    readyUpTimeout: 1000,
     nextMapSuccessfulVoteThreshold: 2,
   },
 };
@@ -189,5 +190,27 @@ describe('QueueService', () => {
       service.leave(player.id);
       expect(service.playerCount).toEqual(0);
     });
+  });
+
+  fit('should launch the game with the correct parameters', async () => {
+    const players = await Promise.all(
+      [...Array(12).keys()]
+        .map(id => playerModel.create({ name: `FAKE_PLAYER_${id}`, steamId: `FAKE_STEAM_ID_${id}` })),
+    );
+
+    for (let i = 0; i < 12; ++i) {
+      await service.join(i, players[i].id);
+    }
+
+    expect(service.state === 'ready');
+
+    const spy = spyOn(gameServiceStub, 'create');
+
+    for (let i = 0; i < 12; ++i) {
+      await service.ready(players[i].id);
+    }
+
+    expect(service.state === 'launching');
+    // expect(spy).toHaveBeenCalledWith([], { }, '', []);
   });
 });
