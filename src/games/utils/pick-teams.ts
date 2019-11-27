@@ -110,8 +110,11 @@ export function pickTeams(players: PlayerSlot[], gameClasses: string[], override
   logger.debug(`${allCombinations.length} possible team setups`);
 
   if (overrides) {
-    allCombinations = filterTeamOverrides(allCombinations, overrides);
-    logger.debug(`${allCombinations.length} possible team setups after filtering out overrides`);
+    const tmpCombinations = filterTeamOverrides(allCombinations, overrides);
+    logger.debug(`${tmpCombinations.length} possible team setups after filtering out overrides`);
+    if (tmpCombinations.length > 0) {
+      allCombinations = tmpCombinations;
+    }
   }
 
   allCombinations.sort((a, b) => a.skillDifference - b.skillDifference);
@@ -120,7 +123,7 @@ export function pickTeams(players: PlayerSlot[], gameClasses: string[], override
   logger.debug(`there are ${possibleTeams.length} possible teams with lowest skill difference`);
 
   const selected = possibleTeams[Math.floor(Math.random() * possibleTeams.length)];
-  logger.info(`team average skill difference = ${selected.skillDifference}`);
+  logger.debug(`team average skill difference = ${selected.skillDifference}`);
 
   return Object.keys(selected)
     .map(key => {
