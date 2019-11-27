@@ -116,7 +116,6 @@ export class QueueService extends EventEmitter {
       delete slot.friend;
     }
 
-    logger.info(`player "${player.name}" joined the queue at slot id=${slot.id} (game class: ${slot.gameClass})`);
     this.slotUpdated(slot, sender);
 
     setTimeout(() => this.updateState(), 0);
@@ -138,7 +137,6 @@ export class QueueService extends EventEmitter {
       delete slot.playerId;
       slot.votesForMapChange = false;
       delete slot.friend;
-      logger.info(`slot ${slot.id} freed`);
       this.slotUpdated(slot, sender);
       setTimeout(() => this.updateState(), 0);
       this.emit('player_leave', playerId);
@@ -158,23 +156,20 @@ export class QueueService extends EventEmitter {
       delete slot.playerId;
       slot.votesForMapChange = false;
       delete slot.friend;
-      logger.info(`slot ${slot.id} freed (kicked)`);
       this.slotUpdated(slot);
       setTimeout(() => this.updateState(), 0);
       this.emit('player_leave', playerId);
     }
   }
 
-  public async ready(playerId: string, sender?: SocketIO.Socket): Promise<QueueSlot> {
+  public ready(playerId: string, sender?: SocketIO.Socket): QueueSlot {
     if (this.state !== 'ready') {
       throw new Error('queue not ready');
     }
 
     const slot = this.slots.find(s => s.playerId === playerId);
     if (slot) {
-      const player = await playerModel.findById(playerId);
       slot.playerReady = true;
-      logger.info(`player "${player.name}" ready`);
       this.slotUpdated(slot, sender);
       setTimeout(() => this.updateState(), 0);
       return slot;
@@ -279,7 +274,6 @@ export class QueueService extends EventEmitter {
 
   private setState(state: QueueState) {
     if (state !== this.state) {
-      logger.info(`queue state change (${this.state} => ${state})`);
       this.onStateChange(this.state, state);
       this.state = state;
       this.ws.emit('queue state update', state);
@@ -332,7 +326,8 @@ export class QueueService extends EventEmitter {
       })
       .filter(p => !!p);
     await this.gameService.create(this.slots, this.queueConfigService.queueConfig, this.map, friends);
-    setTimeout(() => this.reset(), 0);
+    // setTimeout(() => this.reset(), 0);
+    this.reset();
   }
 
   private slotUpdated(slot: QueueSlot, sender?: SocketIO.Socket) {

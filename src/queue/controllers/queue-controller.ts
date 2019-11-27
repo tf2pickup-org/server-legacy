@@ -80,9 +80,9 @@ export class QueueController {
           }
         });
 
-        socket.on('player ready', async done => {
+        socket.on('player ready', done => {
           try {
-            const slot = await this.queueService.ready(player.id, socket);
+            const slot = this.queueService.ready(player.id, socket);
             done({ value: slot });
           } catch (error) {
             done({ error: error.message });

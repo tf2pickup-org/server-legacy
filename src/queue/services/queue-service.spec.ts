@@ -63,6 +63,8 @@ describe('QueueService', () => {
 
   it('should reset all slots initially', () => {
     expect(service.slots.length).toBe(12);
+    expect(service.playerCount).toEqual(0);
+    expect(service.readyPlayerCount).toEqual(0);
   });
 
   it('should reset state', () => {
@@ -192,7 +194,91 @@ describe('QueueService', () => {
     });
   });
 
-  fit('should launch the game with the correct parameters', async () => {
+  describe('#ready()', () => {
+    let player: Document & Player;
+
+    beforeAll(async () => {
+      player = await playerModel.create({
+        name: 'FAKE_PLAYER',
+        steamId: 'FAKE_STEAM_ID',
+      });
+    });
+
+    afterAll(async () => await playerModel.deleteMany({ }));
+
+    beforeEach(async () => {
+      await service.join(0, player.id);
+    });
+
+    it('should deny readying up unless the queue is in ready state', () => {
+      expect(service.state).toEqual('waiting');
+      expect(() => service.ready(player.id)).toThrowError();
+    });
+
+    it('should mark the given slot as ready', () => {
+      service.state = 'ready';
+      const slot = service.ready(player.id);
+      expect(slot.playerReady).toBe(true);
+      expect(service.readyPlayerCount).toEqual(1);
+    });
+  });
+
+  describe('#markFriend()', () => {
+    let medic: Document & Player;
+    let medicSlot: number;
+    let soldier: Document & Player;
+    let soldierSlot: number;
+
+    beforeAll(async () => {
+      [ medic, soldier ] = await playerModel.create([
+        { name: 'FAKE_PLAYER_1', steamId: 'FAKE_STEAM_ID_1' },
+        { name: 'FAKE_PLAYER_2', steamId: 'FAKE_STEAM_ID_2' },
+      ]);
+    });
+
+    afterAll(async () => await playerModel.deleteMany({ }));
+
+    beforeEach(() => {
+      medicSlot = service.slots.find(s => s.gameClass === 'medic').id;
+      soldierSlot = service.slots.find(s => s.gameClass === 'soldier').id;
+    });
+
+    it('should deny if the queue is in launching state', async () => {
+      await service.join(medicSlot, medic.id);
+      await service.join(soldierSlot, soldier.id);
+      service.state = 'launching';
+      expectAsync(service.markFriend(medic.id, soldier.id)).toBeRejected();
+    });
+
+    it('should deny if the given friend is not in the queue', async () => {
+      await service.join(medicSlot, medic.id);
+      expectAsync(service.markFriend(medic.id, soldier.id)).toBeRejected();
+    });
+
+    it('should deny classes other than medic', async () => {
+      await service.join(medicSlot, medic.id);
+      await service.join(soldierSlot, soldier.id);
+      expectAsync(service.markFriend(soldier.id, medic.id)).toBeRejected();
+    });
+
+    it('should deny marking the other medic', async () => {
+      const otherMedicSlot = service.slots.find(s => s.gameClass === 'medic' && s.id !== medicSlot).id;
+      await service.join(medicSlot, medic.id);
+      await service.join(otherMedicSlot, soldier.id);
+      expectAsync(service.markFriend(medic.id, soldier.id)).toBeRejected();
+    });
+
+    it('should save friends id', async () => {
+      await service.join(medicSlot, medic.id);
+      await service.join(soldierSlot, soldier.id);
+      const slot = await service.markFriend(medic.id, soldier.id);
+      expect(slot.friend).toEqual(soldier.id);
+    });
+  });
+
+  it('should launch the game with the correct parameters', async () => {
+    const wait = () => new Promise(resolve => setTimeout(resolve, 0));
+
     const players = await Promise.all(
       [...Array(12).keys()]
         .map(id => playerModel.create({ name: `FAKE_PLAYER_${id}`, steamId: `FAKE_STEAM_ID_${id}` })),
@@ -202,15 +288,31 @@ describe('QueueService', () => {
       await service.join(i, players[i].id);
     }
 
-    expect(service.state === 'ready');
+    const medic = service.slots.find(s => s.gameClass === 'medic');
+    const solly = service.slots.find(s => s.gameClass === 'soldier');
+    const medic2 = service.slots.find(s => s.gameClass === 'medic' && s.playerId !== medic.playerId);
 
-    const spy = spyOn(gameServiceStub, 'create');
+    service.markFriend(medic.playerId, solly.playerId);
+    medic2.friend = medic.playerId; // should be removed before calling GameService.create()
 
+    await wait();
+    expect(service.state).toEqual('ready');
+
+    const spy = spyOn(gameServiceStub, 'create').and.returnValue(new Promise(resolve => resolve(null)));
+
+    const slots = new Array(12);
     for (let i = 0; i < 12; ++i) {
-      await service.ready(players[i].id);
+      slots[i] = { ...await service.ready(players[i].id) };
     }
+    const map = service.map;
 
+    await wait();
     expect(service.state === 'launching');
-    // expect(spy).toHaveBeenCalledWith([], { }, '', []);
+    expect(spy).toHaveBeenCalledWith(
+      slots,
+      queueConfigServiceStub.queueConfig,
+      map,
+      [[medic.playerId, solly.playerId]],
+    );
   });
 });
