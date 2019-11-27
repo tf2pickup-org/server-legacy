@@ -237,6 +237,7 @@ export class QueueService extends EventEmitter {
       this.onStateChange(this.state, state);
       this.state = state;
       this.ws.emit('queue state update', state);
+      this.emit('state_change', state);
     }
   }
 
@@ -245,7 +246,6 @@ export class QueueService extends EventEmitter {
       this.timer = setTimeout(() => this.readyUpTimeout(), this.queueConfigService.queueConfig.readyUpTimeout);
     } else if (oldState === 'ready' && newState === 'launching') {
       delete this.timer;
-      this.launch();
     } else if (oldState === 'launching' && newState === 'waiting') {
       delete this.timer;
     } else if (oldState === 'ready' && newState === 'waiting') {
@@ -272,23 +272,23 @@ export class QueueService extends EventEmitter {
     });
   }
 
-  private async launch() {
-    const friends = this.slots
-      .filter(s => s.gameClass === 'medic')
-      .filter(s => !!s.friend)
-      .map(s => {
-        const friend = this.slots.find(f => f.playerId === s.friend);
-        if (friend.gameClass === 'medic') {
-          return null;
-        } else {
-          return [ s.playerId, friend.playerId ];
-        }
-      })
-      .filter(p => !!p);
-    await this.gameService.create(this.slots, this.queueConfigService.queueConfig, '', friends);
-    // setTimeout(() => this.reset(), 0);
-    this.reset();
-  }
+  // private async launch() {
+  //   const friends = this.slots
+  //     .filter(s => s.gameClass === 'medic')
+  //     .filter(s => !!s.friend)
+  //     .map(s => {
+  //       const friend = this.slots.find(f => f.playerId === s.friend);
+  //       if (friend.gameClass === 'medic') {
+  //         return null;
+  //       } else {
+  //         return [ s.playerId, friend.playerId ];
+  //       }
+  //     })
+  //     .filter(p => !!p);
+  //   await this.gameService.create(this.slots, this.queueConfigService.queueConfig, '', friends);
+  //   // setTimeout(() => this.reset(), 0);
+  //   this.reset();
+  // }
 
   private slotUpdated(slot: QueueSlot, sender?: SocketIO.Socket) {
     if (sender) {
