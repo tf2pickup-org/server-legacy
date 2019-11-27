@@ -11,7 +11,7 @@ import { QueueService } from './queue-service';
 
 const wsProviderServiceStub = {
   ws: {
-    emit: () => { },
+    emit: (...args: any[]) => { },
   },
 };
 
@@ -131,13 +131,13 @@ describe('QueueService', () => {
     it('should emit the event', async () => {
       const spy = spyOn(service, 'emit');
       await service.join(0, player.id);
-      expect(spy).toHaveBeenCalled();
+      expect(spy).toHaveBeenCalledWith('player_join', player.id);
     });
 
     it('should emit the event over ws', async () => {
       const spy = spyOn(wsProviderServiceStub.ws, 'emit');
-      await service.join(0, player.id);
-      expect(spy).toHaveBeenCalled();
+      const slot = await service.join(0, player.id);
+      expect(spy).toHaveBeenCalledWith('queue slot update', slot);
     });
 
     it('should update queue numbers', async () => {
@@ -171,13 +171,13 @@ describe('QueueService', () => {
     it('should emit the event', () => {
       const spy = spyOn(service, 'emit');
       service.leave(player.id);
-      expect(spy).toHaveBeenCalled();
+      expect(spy).toHaveBeenCalledWith('player_leave', player.id);
     });
 
     it('should emit the ws event', () => {
       const spy = spyOn(wsProviderServiceStub.ws, 'emit');
-      service.leave(player.id);
-      expect(spy).toHaveBeenCalled();
+      const slot = service.leave(player.id);
+      expect(spy).toHaveBeenCalledWith('queue slot update', slot);
     });
 
     it('should deny leaving the queue when the player is readied up', () => {
@@ -216,10 +216,12 @@ describe('QueueService', () => {
     });
 
     it('should mark the given slot as ready', () => {
+      const spy = spyOn(wsProviderServiceStub.ws, 'emit');
       service.state = 'ready';
       const slot = service.ready(player.id);
       expect(slot.playerReady).toBe(true);
       expect(service.readyPlayerCount).toEqual(1);
+      expect(spy).toHaveBeenCalledWith('queue slot update', slot);
     });
   });
 
@@ -271,8 +273,11 @@ describe('QueueService', () => {
     it('should save friends id', async () => {
       await service.join(medicSlot, medic.id);
       await service.join(soldierSlot, soldier.id);
+
+      const spy = spyOn(wsProviderServiceStub.ws, 'emit');
       const slot = await service.markFriend(medic.id, soldier.id);
       expect(slot.friend).toEqual(soldier.id);
+      expect(spy).toHaveBeenCalledWith('queue slot update', slot);
     });
   });
 
@@ -314,5 +319,7 @@ describe('QueueService', () => {
       map,
       [[medic.playerId, solly.playerId]],
     );
+
+    await playerModel.deleteMany({ });
   });
 });
