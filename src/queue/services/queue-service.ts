@@ -1,7 +1,6 @@
 import { EventEmitter } from 'events';
 import { inject } from 'inversify';
 import { provide } from 'inversify-binding-decorators';
-import { shuffle } from 'lodash';
 import { WsProviderService } from '../../core';
 import { GameService } from '../../games/services/game-service';
 import logger from '../../logger';
@@ -9,7 +8,6 @@ import { playerModel } from '../../players/models/player';
 import { PlayerBansService } from '../../players/services/player-bans-service';
 import { QueueSlot } from '../models/queue-slot';
 import { QueueState } from '../models/queue-state';
-import { Tf2Map } from '../models/tf2-map';
 import { QueueConfigService } from './queue-config-service';
 
 @provide(QueueService)
@@ -17,10 +15,8 @@ export class QueueService extends EventEmitter {
 
   public slots: QueueSlot[] = [];
   public state: QueueState = 'waiting';
-  public map: string;
   private timer: NodeJS.Timeout;
   private ws = this.wsProvider.ws;
-  private mapPool: Tf2Map[] = [];
 
   public get requiredPlayerCount() {
     return this.queueConfigService.queueConfig.classes
@@ -33,10 +29,6 @@ export class QueueService extends EventEmitter {
 
   public get readyPlayerCount() {
     return this.slots.filter(s => s.playerReady).length;
-  }
-
-  public get mapChangeVoterCount() {
-    return this.slots.filter(s => s.votesForMapChange).length;
   }
 
   constructor(
@@ -56,7 +48,6 @@ export class QueueService extends EventEmitter {
   public reset() {
     this.resetSlots();
     this.ws.emit('queue slots reset', this.slots);
-    this.randomizeMap();
     this.updateState();
   }
 
@@ -90,7 +81,6 @@ export class QueueService extends EventEmitter {
     }
 
     let tmpAttributes = {
-      votesForMapChange: false,
       friend: null,
     };
 
@@ -99,8 +89,7 @@ export class QueueService extends EventEmitter {
       if (s.playerId === playerId) {
         delete s.playerId;
         s.playerReady = false;
-        tmpAttributes = { votesForMapChange: s.votesForMapChange, friend: s.friend };
-        s.votesForMapChange = false;
+        tmpAttributes = { friend: s.friend };
         delete s.friend;
         this.slotUpdated(s);
       }
@@ -135,7 +124,6 @@ export class QueueService extends EventEmitter {
       }
 
       delete slot.playerId;
-      slot.votesForMapChange = false;
       delete slot.friend;
       this.slotUpdated(slot, sender);
       setTimeout(() => this.updateState(), 0);
@@ -154,7 +142,6 @@ export class QueueService extends EventEmitter {
       }
 
       delete slot.playerId;
-      slot.votesForMapChange = false;
       delete slot.friend;
       this.slotUpdated(slot);
       setTimeout(() => this.updateState(), 0);
@@ -172,22 +159,6 @@ export class QueueService extends EventEmitter {
       slot.playerReady = true;
       this.slotUpdated(slot, sender);
       setTimeout(() => this.updateState(), 0);
-      return slot;
-    } else {
-      throw new Error('player is not in the queue');
-    }
-  }
-
-  public async voteForMapChange(playerId: string, value: boolean, voter?: SocketIO.Socket) {
-    if (this.state === 'launching') {
-      throw new Error('can\'t vote now');
-    }
-
-    const slot = this.slots.find(s => s.playerId === playerId);
-    if (slot) {
-      slot.votesForMapChange = value;
-      this.slotUpdated(slot, voter);
-      setTimeout(() => this.shouldChangeMap(), 0);
       return slot;
     } else {
       throw new Error('player is not in the queue');
@@ -237,17 +208,6 @@ export class QueueService extends EventEmitter {
 
       return prev.concat(tmpSlots);
     }, []);
-  }
-
-  private randomizeMap() {
-    if (this.mapPool.length === 0) {
-      this.mapPool = shuffle(this.queueConfigService.queueConfig.maps);
-      while (this.mapPool[0] === this.map) {
-        this.mapPool = shuffle(this.queueConfigService.queueConfig.maps);
-      }
-    }
-    this.map = this.mapPool.shift();
-    this.ws.emit('queue map updated', this.map);
   }
 
   private updateState() {
@@ -325,7 +285,7 @@ export class QueueService extends EventEmitter {
         }
       })
       .filter(p => !!p);
-    await this.gameService.create(this.slots, this.queueConfigService.queueConfig, this.map, friends);
+    await this.gameService.create(this.slots, this.queueConfigService.queueConfig, '', friends);
     // setTimeout(() => this.reset(), 0);
     this.reset();
   }
@@ -339,23 +299,8 @@ export class QueueService extends EventEmitter {
     }
   }
 
-  private shouldChangeMap() {
-    if (this.mapChangeVoterCount >= this.queueConfigService.queueConfig.nextMapSuccessfulVoteThreshold) {
-      this.randomizeMap();
-      this.resetAllVotes();
-    }
-  }
-
-  private resetAllVotes() {
-    this.slots.forEach(s => {
-      s.votesForMapChange = false;
-      this.slotUpdated(s);
-    });
-  }
-
   private removePlayerFromSlot(slot: QueueSlot) {
     delete slot.playerId;
-    slot.votesForMapChange = false;
     delete slot.friend;
     logger.info(`slot ${slot.id} freed`);
     this.slotUpdated(slot);

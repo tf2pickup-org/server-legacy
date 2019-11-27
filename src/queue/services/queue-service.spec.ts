@@ -111,7 +111,6 @@ describe('QueueService', () => {
       const slot = await service.join(0, player.id);
       expect(slot.playerId).toEqual(player.id);
       expect(slot.playerReady).toBe(false);
-      expect(slot.votesForMapChange).toBe(false);
       expect(slot.friend).toBeFalsy();
     });
 
@@ -309,14 +308,13 @@ describe('QueueService', () => {
     for (let i = 0; i < 12; ++i) {
       slots[i] = { ...await service.ready(players[i].id) };
     }
-    const map = service.map;
 
     await wait();
     expect(service.state === 'launching');
     expect(spy).toHaveBeenCalledWith(
       slots,
       queueConfigServiceStub.queueConfig,
-      map,
+      jasmine.any(String),
       [[medic.playerId, solly.playerId]],
     );
 
