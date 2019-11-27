@@ -13,7 +13,7 @@ const queueServiceStub = {
 
 };
 
-fdescribe('MapVoteService', () => {
+describe('MapVoteService', () => {
   const container = new Container();
   let service: MapVoteService;
 

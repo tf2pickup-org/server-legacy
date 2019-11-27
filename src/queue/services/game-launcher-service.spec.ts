@@ -1,24 +1,30 @@
-import { GameService } from 'games';
+import { EventEmitter } from 'events';
 import { Container } from 'inversify';
+import { GameService } from '../../games/services/game-service';
+import { QueueSlot } from '../../queue/models/queue-slot';
 import { GameLauncherService } from './game-launcher-service';
 import { MapVoteService } from './map-vote-service';
 import { QueueConfigService } from './queue-config-service';
 import { QueueService } from './queue-service';
 
 const gameServiceStub = {
-
+  create: (queueSlots, queueConfig, map, friends) => null,
 };
 
-const queueServiceStub = {
+class QueueServiceStub extends EventEmitter {
+  public slots: QueueSlot[] = [];
+}
 
-};
+const queueServiceStub = new QueueServiceStub();
 
 const queueConfigServiceStub = {
+  queueConfig: {
 
+  },
 };
 
 const mapVoteServiceStub = {
-
+  bestMap: 'cp_fake_rc1',
 };
 
 describe('GameLauncherService', () => {
@@ -35,7 +41,20 @@ describe('GameLauncherService', () => {
   beforeEach(() => service = container.resolve(GameLauncherService));
 
   it('should launch the game once its ready', async () => {
+    const spy = spyOn(gameServiceStub, 'create').and.returnValue(new Promise(resolve => resolve(null)));
 
+    queueServiceStub.slots = [
+      { id: 0, gameClass: 'soldier', playerId: 'FAKE_PLAYER_1', playerReady: true },
+      { id: 1, gameClass: 'soldier', playerId: 'FAKE_PLAYER_2', playerReady: true },
+    ];
+    queueServiceStub.emit('state_change', 'launching');
+
+    expect(spy).toHaveBeenCalledWith(
+      queueServiceStub.slots,
+      queueConfigServiceStub.queueConfig,
+      'cp_fake_rc1',
+      [],
+    );
   });
 
 });

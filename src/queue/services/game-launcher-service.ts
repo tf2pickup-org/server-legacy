@@ -24,17 +24,17 @@ export class GameLauncherService {
 
   private async launchGame() {
     const friends = this.queueService.slots
-    .filter(s => s.gameClass === 'medic')
-    .filter(s => !!s.friend)
-    .map(s => {
-      const friend = this.queueService.slots.find(f => f.playerId === s.friend);
-      if (friend.gameClass === 'medic') {
-        return null;
-      } else {
-        return [ s.playerId, friend.playerId ];
-      }
-    })
-    .filter(p => !!p);
+      .filter(s => s.gameClass === 'medic')
+      .filter(s => !!s.friend)
+      .map(s => {
+        const friend = this.queueService.slots.find(f => f.playerId === s.friend);
+        if (friend.gameClass === 'medic') {
+          return null;
+        } else {
+          return [ s.playerId, friend.playerId ];
+        }
+      })
+      .filter(p => !!p);
 
     await this.gameService.create(
       this.queueService.slots,
