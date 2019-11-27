@@ -80,9 +80,9 @@ export class QueueController {
           }
         });
 
-        socket.on('player ready', async done => {
+        socket.on('player ready', done => {
           try {
-            const slot = await this.queueService.ready(player.id, socket);
+            const slot = this.queueService.ready(player.id, socket);
             done({ value: slot });
           } catch (error) {
             done({ error: error.message });
@@ -92,6 +92,15 @@ export class QueueController {
         socket.on('vote for map change', async (value: boolean, done) => {
           try {
             const slot = await this.queueService.voteForMapChange(player.id, value, socket);
+            done({ value: slot });
+          } catch (error) {
+            done({ error: error.message });
+          }
+        });
+
+        socket.on('mark friend', async (friendId: string, done) => {
+          try {
+            const slot = await this.queueService.markFriend(player.id, friendId, socket);
             done({ value: slot });
           } catch (error) {
             done({ error: error.message });

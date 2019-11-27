@@ -41,7 +41,8 @@ export class GameService {
     return await gameModel.findById(gameId);
   }
 
-  public async create(queueSlots: QueueSlot[], queueConfig: QueueConfig, map: string): Promise<DocumentType<Game>> {
+  public async create(queueSlots: QueueSlot[], queueConfig: QueueConfig,
+                      map: string, friends: string[][]): Promise<DocumentType<Game>> {
     queueSlots.forEach(slot => {
       if (!slot.playerId) {
         throw new Error('cannot create the game with queue not being full');
@@ -54,7 +55,7 @@ export class GameService {
 
     const players: PlayerSlot[] = await Promise.all(queueSlots.map(slot => this.queueSlotToPlayerSlot(slot)));
     const assignedSkills = players.reduce((prev, curr) => { prev[curr.playerId] = curr.skill; return prev; }, { });
-    const slots = pickTeams(players, queueConfig.classes.map(cls => cls.name));
+    const slots = pickTeams(players, queueConfig.classes.map(cls => cls.name), { friends });
 
     const game = await gameModel.create({
       map,
