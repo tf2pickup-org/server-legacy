@@ -280,7 +280,7 @@ describe('QueueService', () => {
     });
   });
 
-  fdescribe('state', () => {
+  describe('state', () => {
     const wait = () => new Promise(resolve => setTimeout(resolve, 0));
     let players: Array<Player & Document>;
 
