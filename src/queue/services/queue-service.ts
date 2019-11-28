@@ -158,7 +158,7 @@ export class QueueService extends EventEmitter {
     if (slot) {
       slot.playerReady = true;
       this.slotUpdated(slot, sender);
-      setTimeout(() => this.updateState(), 0);
+      this.updateState();
       return slot;
     } else {
       throw new Error('player is not in the queue');
@@ -187,15 +187,6 @@ export class QueueService extends EventEmitter {
     slot.friend = friendId;
     this.slotUpdated(slot, sender);
     return slot;
-  }
-
-  public async validateAllPlayers() {
-    this.slots.filter(s => !!s.playerId).forEach(async slot => {
-      const bans = await this.playerBansService.getActiveBansForPlayer(slot.playerId);
-      if (bans.length > 0) {
-        this.removePlayerFromSlot(slot);
-      }
-    });
   }
 
   private resetSlots() {
@@ -271,24 +262,6 @@ export class QueueService extends EventEmitter {
       this.slotUpdated(s);
     });
   }
-
-  // private async launch() {
-  //   const friends = this.slots
-  //     .filter(s => s.gameClass === 'medic')
-  //     .filter(s => !!s.friend)
-  //     .map(s => {
-  //       const friend = this.slots.find(f => f.playerId === s.friend);
-  //       if (friend.gameClass === 'medic') {
-  //         return null;
-  //       } else {
-  //         return [ s.playerId, friend.playerId ];
-  //       }
-  //     })
-  //     .filter(p => !!p);
-  //   await this.gameService.create(this.slots, this.queueConfigService.queueConfig, '', friends);
-  //   // setTimeout(() => this.reset(), 0);
-  //   this.reset();
-  // }
 
   private slotUpdated(slot: QueueSlot, sender?: SocketIO.Socket) {
     if (sender) {
