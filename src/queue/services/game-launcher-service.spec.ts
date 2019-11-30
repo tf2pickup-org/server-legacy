@@ -25,7 +25,7 @@ const queueConfigServiceStub = {
 };
 
 const mapVoteServiceStub = {
-  bestMap: 'cp_fake_rc1',
+  getWinner: () => 'cp_fake_rc1',
 };
 
 describe('GameLauncherService', () => {

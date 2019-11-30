@@ -39,7 +39,7 @@ export class GameLauncherService {
     await this.gameService.create(
       this.queueService.slots,
       this.queueConfigService.queueConfig,
-      this.mapVoteService.bestMap,
+      this.mapVoteService.getWinner(),
       friends,
     );
 

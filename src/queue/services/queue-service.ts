@@ -3,7 +3,6 @@ import { inject } from 'inversify';
 import { provide } from 'inversify-binding-decorators';
 import { WsProviderService } from '../../core';
 import { GameService } from '../../games/services/game-service';
-import logger from '../../logger';
 import { playerModel } from '../../players/models/player';
 import { PlayerBansService } from '../../players/services/player-bans-service';
 import { QueueSlot } from '../models/queue-slot';

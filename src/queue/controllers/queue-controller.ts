@@ -6,7 +6,8 @@ import { gameModel } from '../../games/models/game';
 import logger from '../../logger';
 import { Player } from '../../players/models/player';
 import { OnlinePlayerService } from '../../players/services/online-player-service';
-import { GameLauncherService, QueueConfigService, QueueService } from '../services';
+import { Tf2Map } from '../models/tf2-map';
+import { GameLauncherService, MapVoteService, QueueConfigService, QueueService } from '../services';
 
 @controller('/queue')
 export class QueueController extends BaseHttpController {
@@ -15,6 +16,7 @@ export class QueueController extends BaseHttpController {
   @inject(QueueConfigService) private queueConfigService: QueueConfigService;
   @inject(WsProviderService) private wsProvider: WsProviderService;
   @inject(OnlinePlayerService) private onlinePlayerService: OnlinePlayerService;
+  @inject(MapVoteService) private mapVoteService: MapVoteService;
   @inject(GameLauncherService) private gameLauncherService: GameLauncherService; // don't remove
 
   @httpGet('/')
@@ -23,6 +25,7 @@ export class QueueController extends BaseHttpController {
       config: this.queueConfigService.queueConfig,
       state: this.queueService.state,
       slots: this.queueService.slots,
+      mapVoteResults: this.mapVoteService.results,
     });
   }
 
@@ -39,6 +42,11 @@ export class QueueController extends BaseHttpController {
   @httpGet('/slots')
   public async getSlots() {
     return this.json(this.queueService.slots);
+  }
+
+  @httpGet('/map_vote_results')
+  public async getMapVoteResults() {
+    return this.json(this.mapVoteService.results);
   }
 
   @httpGet('/substitute_requests')
@@ -86,6 +94,15 @@ export class QueueController extends BaseHttpController {
           try {
             const slot = await this.queueService.markFriend(player.id, friendId, socket);
             done({ value: slot });
+          } catch (error) {
+            done({ error: error.message });
+          }
+        });
+
+        socket.on('vote for map', (map: Tf2Map, done) => {
+          try {
+            this.mapVoteService.voteForMap(player.id, map);
+            done();
           } catch (error) {
             done({ error: error.message });
           }
