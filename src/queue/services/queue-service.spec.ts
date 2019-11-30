@@ -281,7 +281,7 @@ describe('QueueService', () => {
   });
 
   describe('state', () => {
-    const wait = () => new Promise(resolve => setTimeout(resolve, 0));
+    const wait = () => new Promise(resolve => setImmediate(resolve));
     let players: Array<Player & Document>;
 
     beforeEach(async () => {
@@ -322,20 +322,18 @@ describe('QueueService', () => {
       jasmine.clock().install();
 
       expect(service.state).toEqual('waiting');
-      const spy = spyOn(service, 'emit');
 
       for (let i = 0; i < 12; ++i) {
         await service.join(i, players[i].id);
       }
 
-      jasmine.clock().tick(1);
+      await wait();
       expect(service.state).toEqual('ready');
-      expect(spy).toHaveBeenCalledWith('state_change', 'ready');
 
       jasmine.clock().tick(queueConfigServiceStub.queueConfig.readyUpTimeout + 1);
 
       expect(service.state).toEqual('waiting');
-      expect(spy).toHaveBeenCalledWith('state_change', 'waiting');
+      expect(service.slots.every(s => !s.playerId)).toBe(true);
 
       jasmine.clock().uninstall();
     });

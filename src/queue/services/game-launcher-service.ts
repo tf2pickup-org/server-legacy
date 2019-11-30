@@ -42,6 +42,8 @@ export class GameLauncherService {
       this.mapVoteService.bestMap,
       friends,
     );
+
+    this.queueService.reset();
   }
 
 }

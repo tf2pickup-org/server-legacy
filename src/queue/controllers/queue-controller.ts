@@ -6,7 +6,7 @@ import { gameModel } from '../../games/models/game';
 import logger from '../../logger';
 import { Player } from '../../players/models/player';
 import { OnlinePlayerService } from '../../players/services/online-player-service';
-import { QueueConfigService, QueueService } from '../services';
+import { GameLauncherService, QueueConfigService, QueueService } from '../services';
 
 @controller('/queue')
 export class QueueController extends BaseHttpController {
@@ -15,6 +15,7 @@ export class QueueController extends BaseHttpController {
   @inject(QueueConfigService) private queueConfigService: QueueConfigService;
   @inject(WsProviderService) private wsProvider: WsProviderService;
   @inject(OnlinePlayerService) private onlinePlayerService: OnlinePlayerService;
+  @inject(GameLauncherService) private gameLauncherService: GameLauncherService; // don't remove
 
   @httpGet('/')
   public async index() {

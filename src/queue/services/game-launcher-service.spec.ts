@@ -13,6 +13,7 @@ const gameServiceStub = {
 
 class QueueServiceStub extends EventEmitter {
   public slots: QueueSlot[] = [];
+  public reset() { }
 }
 
 const queueServiceStub = new QueueServiceStub();
@@ -41,7 +42,8 @@ describe('GameLauncherService', () => {
   beforeEach(() => service = container.resolve(GameLauncherService));
 
   it('should launch the game once its ready', async () => {
-    const spy = spyOn(gameServiceStub, 'create').and.returnValue(new Promise(resolve => resolve(null)));
+    const spyCreate = spyOn(gameServiceStub, 'create').and.callThrough();
+    const spyReset = spyOn(queueServiceStub, 'reset').and.callThrough();
 
     queueServiceStub.slots = [
       { id: 0, gameClass: 'soldier', playerId: 'FAKE_PLAYER_1', playerReady: true },
@@ -49,12 +51,15 @@ describe('GameLauncherService', () => {
     ];
     queueServiceStub.emit('state_change', 'launching');
 
-    expect(spy).toHaveBeenCalledWith(
+    expect(spyCreate).toHaveBeenCalledWith(
       queueServiceStub.slots,
       queueConfigServiceStub.queueConfig,
       'cp_fake_rc1',
       [],
     );
+
+    await new Promise(resolve => resolve());
+    expect(spyReset).toHaveBeenCalled();
   });
 
 });

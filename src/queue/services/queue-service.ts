@@ -107,7 +107,7 @@ export class QueueService extends EventEmitter {
 
     this.slotUpdated(slot, sender);
 
-    setTimeout(() => this.updateState(), 0);
+    setImmediate(() => this.updateState());
     this.emit('player_join', playerId);
     return slot;
   }
@@ -126,7 +126,7 @@ export class QueueService extends EventEmitter {
       delete slot.playerId;
       delete slot.friend;
       this.slotUpdated(slot, sender);
-      setTimeout(() => this.updateState(), 0);
+      setImmediate(() => this.updateState());
       this.emit('player_leave', playerId);
       return slot;
     } else {
@@ -144,7 +144,7 @@ export class QueueService extends EventEmitter {
       delete slot.playerId;
       delete slot.friend;
       this.slotUpdated(slot);
-      setTimeout(() => this.updateState(), 0);
+      setImmediate(() => this.updateState());
       this.emit('player_leave', playerId);
     }
   }
@@ -270,14 +270,6 @@ export class QueueService extends EventEmitter {
     } else {
       this.ws.emit('queue slot update', slot);
     }
-  }
-
-  private removePlayerFromSlot(slot: QueueSlot) {
-    delete slot.playerId;
-    delete slot.friend;
-    logger.info(`slot ${slot.id} freed`);
-    this.slotUpdated(slot);
-    setTimeout(() => this.updateState(), 0);
   }
 
 }
