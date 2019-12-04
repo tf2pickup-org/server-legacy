@@ -181,7 +181,7 @@ describe('QueueService', () => {
     it('should emit the ws event', () => {
       const spy = spyOn(wsProviderServiceStub.ws, 'emit');
       const slot = service.leave(player.id);
-      expect(spy).toHaveBeenCalledWith('queue slot update', slot);
+      expect(spy).toHaveBeenCalledWith('queue slots update', [ slot ]);
     });
 
     it('should deny leaving the queue when the player is readied up', () => {
@@ -225,7 +225,7 @@ describe('QueueService', () => {
       const slot = service.ready(player.id);
       expect(slot.playerReady).toBe(true);
       expect(service.readyPlayerCount).toEqual(1);
-      expect(spy).toHaveBeenCalledWith('queue slot update', slot);
+      expect(spy).toHaveBeenCalledWith('queue slots update', [ slot ]);
     });
   });
 
@@ -281,7 +281,7 @@ describe('QueueService', () => {
       const spy = spyOn(wsProviderServiceStub.ws, 'emit');
       const slot = await service.markFriend(medic.id, soldier.id);
       expect(slot.friend).toEqual(soldier.id);
-      expect(spy).toHaveBeenCalledWith('queue slot update', slot);
+      expect(spy).toHaveBeenCalledWith('queue slots update', [ slot ]);
     });
   });
 

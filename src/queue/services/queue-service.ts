@@ -37,7 +37,7 @@ export class QueueService extends EventEmitter {
     @inject(PlayerBansService) private playerBansService: PlayerBansService,
   ) {
     super();
-    this.playerBansService.on('player banned', playerId => this.kick(playerId));
+    this.playerBansService.on('player_banned', playerId => this.kick(playerId));
     this.reset();
   }
 
@@ -46,7 +46,7 @@ export class QueueService extends EventEmitter {
    */
   public reset() {
     this.resetSlots();
-    this.ws.emit('queue slots reset', this.slots);
+    this.ws.emit('queue slots update', this.slots);
     this.updateState();
   }
 
@@ -113,17 +113,13 @@ export class QueueService extends EventEmitter {
       }
 
       this.clearSlot(slot);
-      this.slotUpdated(slot, sender);
+      this.slotsUpdated([ slot ], sender);
       this.emit('player_leave', playerId);
       setImmediate(() => this.updateState());
       return slot;
     } else {
       return null;
     }
-  }
-
-  public isInQueue(playerId: string): boolean {
-    return !!this.slots.find(s => s.playerId === playerId);
   }
 
   public kick(playerId: string) {
@@ -134,10 +130,14 @@ export class QueueService extends EventEmitter {
       }
 
       this.clearSlot(slot);
-      this.slotUpdated(slot);
-      setImmediate(() => this.updateState());
+      this.slotsUpdated([ slot ]);
       this.emit('player_leave', playerId);
+      setImmediate(() => this.updateState());
     }
+  }
+
+  public isInQueue(playerId: string): boolean {
+    return !!this.slots.find(s => s.playerId === playerId);
   }
 
   public ready(playerId: string, sender?: SocketIO.Socket): QueueSlot {
@@ -148,7 +148,7 @@ export class QueueService extends EventEmitter {
     const slot = this.slots.find(s => s.playerId === playerId);
     if (slot) {
       slot.playerReady = true;
-      this.slotUpdated(slot, sender);
+      this.slotsUpdated([ slot ], sender);
       this.updateState();
       return slot;
     } else {
@@ -176,7 +176,7 @@ export class QueueService extends EventEmitter {
     }
 
     slot.friend = friendId;
-    this.slotUpdated(slot, sender);
+    this.slotsUpdated([ slot ], sender);
     return slot;
   }
 
@@ -244,13 +244,13 @@ export class QueueService extends EventEmitter {
   }
 
   private cleanupQueue() {
-    this.slots.forEach(s => {
-      if (!s.playerReady) {
-        delete s.playerId;
+    this.slots.forEach(slot => {
+      if (!slot.playerReady) {
+        this.clearSlot(slot);
       } else {
-        s.playerReady = false;
+        slot.playerReady = false;
       }
-      this.slotUpdated(s);
+      this.slotsUpdated([ slot ]);
     });
   }
 
@@ -262,18 +262,10 @@ export class QueueService extends EventEmitter {
 
   private slotsUpdated(slots: QueueSlot[], sender?: SocketIO.Socket) {
     if (sender) {
+      // broadcast event to everyone except the sender
       sender.broadcast.emit('queue slots update', slots);
     } else {
       this.ws.emit('queue slots update', slots);
-    }
-  }
-
-  private slotUpdated(slot: QueueSlot, sender?: SocketIO.Socket) {
-    if (sender) {
-      // broadcast event to everyone except the sender
-      sender.broadcast.emit('queue slot update', slot);
-    } else {
-      this.ws.emit('queue slot update', slot);
     }
   }
 
