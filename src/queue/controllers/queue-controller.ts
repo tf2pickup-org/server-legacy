@@ -102,7 +102,7 @@ export class QueueController extends BaseHttpController {
         socket.on('vote for map', (map: Tf2Map, done) => {
           try {
             this.mapVoteService.voteForMap(player.id, map);
-            done();
+            done({ value: map });
           } catch (error) {
             done({ error: error.message });
           }
