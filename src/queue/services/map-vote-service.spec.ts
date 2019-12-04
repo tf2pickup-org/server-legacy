@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events';
 import { Container } from 'inversify';
 import { WsProviderService } from '../../core/services';
 import { MapVoteService } from './map-vote-service';
@@ -10,9 +11,11 @@ const queueConfigServiceStub = {
   },
 };
 
-const queueServiceStub = {
+class QueueServiceStub extends EventEmitter {
+  public isInQueue(playerId: string) { return true; }
+}
 
-};
+const queueServiceStub = new QueueServiceStub();
 
 const wsProviderServiceStub = {
   ws: {
@@ -20,7 +23,7 @@ const wsProviderServiceStub = {
   },
 };
 
-fdescribe('MapVoteService', () => {
+describe('MapVoteService', () => {
   const container = new Container();
   let service: MapVoteService;
 
@@ -60,6 +63,23 @@ fdescribe('MapVoteService', () => {
 
     it('should deny voting for maps out of pool', () => {
       expect(() => service.voteForMap('FAKE_ID', 'cp_sunshine')).toThrowError();
+    });
+
+    it('should deny voting if the player is not in the queue', () => {
+      const spy = spyOn(queueServiceStub, 'isInQueue').and.returnValue(false);
+      expect(() => service.voteForMap('FAKE_ID', 'cp_badlands')).toThrowError();
+    });
+
+    it('should remove the player\'s vote when the player leaves the queue', () => {
+      service.voteForMap('FAKE_PLAYER_ID', 'cp_badlands');
+      expect(service.voteCountForMap('cp_badlands')).toEqual(1);
+
+      const spy = spyOn(wsProviderServiceStub.ws, 'emit');
+
+      queueServiceStub.emit('player_leave', 'FAKE_PLAYER_ID');
+      expect(service.voteCountForMap('cp_badlands')).toEqual(0);
+
+      expect(spy).toHaveBeenCalledWith('map vote results update', jasmine.any(Object));
     });
   });
 
