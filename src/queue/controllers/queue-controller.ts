@@ -65,8 +65,8 @@ export class QueueController extends BaseHttpController {
 
         socket.on('join queue', async (slotId: number, done) => {
           try {
-            const slot = await this.queueService.join(slotId, player.id, socket);
-            done({ value: slot });
+            const slots = await this.queueService.join(slotId, player.id, socket);
+            done({ value: slots });
           } catch (error) {
             done({ error: error.message });
           }

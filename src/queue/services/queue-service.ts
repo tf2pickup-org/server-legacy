@@ -54,8 +54,9 @@ export class QueueService extends EventEmitter {
    * Joins the given player at the given spot.
    * @param slotId The slot to be taken.
    * @param playerId The player to take the slot.
+   * @returns List of modified slots.
    */
-  public async join(slotId: number, playerId: string, sender?: SocketIO.Socket): Promise<QueueSlot> {
+  public async join(slotId: number, playerId: string, sender?: SocketIO.Socket): Promise<QueueSlot[]> {
     const player = await playerModel.findById(playerId);
     if (!player) {
       throw new Error('no such player');
@@ -70,45 +71,34 @@ export class QueueService extends EventEmitter {
       throw new Error('player involved in a currently active game');
     }
 
-    const slot = this.slots.find(s => s.id === slotId);
-    if (!slot) {
+    const targetSlot = this.slots.find(s => s.id === slotId);
+    if (!targetSlot) {
       throw new Error('no such slot');
     }
 
-    if (slot.playerId) {
+    if (targetSlot.playerId) {
       throw new Error('slot already taken');
     }
 
-    let tmpAttributes = {
-      friend: null,
-    };
+    // remove player from any slot(s) he could be occupying
+    const oldSlots = this.slots.filter(s => s.playerId === playerId);
+    oldSlots.forEach(s => this.clearSlot(s));
 
-    // remove player from any slot he could be occupying
-    this.slots.forEach(s => {
-      if (s.playerId === playerId) {
-        delete s.playerId;
-        s.playerReady = false;
-        tmpAttributes = { friend: s.friend };
-        delete s.friend;
-        this.slotUpdated(s);
-      }
-    });
-
-    slot.playerId = playerId;
+    targetSlot.playerId = playerId;
     if (this.state === 'ready') {
-      slot.playerReady = true;
+      targetSlot.playerReady = true;
     }
 
-    Object.assign(slot, tmpAttributes);
-    if (slot.gameClass !== 'medic') {
-      delete slot.friend;
+    if (targetSlot.gameClass !== 'medic') {
+      delete targetSlot.friend;
     }
 
-    this.slotUpdated(slot, sender);
+    const slots = [ targetSlot, ...oldSlots ];
+    this.slotsUpdated(slots, sender);
+    this.emit('player_join', playerId);
 
     setImmediate(() => this.updateState());
-    this.emit('player_join', playerId);
-    return slot;
+    return slots;
   }
 
   /**
@@ -119,14 +109,13 @@ export class QueueService extends EventEmitter {
     const slot = this.slots.find(s => s.playerId === playerId);
     if (slot) {
       if (slot.playerReady && (this.state === 'ready' || this.state === 'launching')) {
-        throw new Error('cannot unready');
+        throw new Error('cannot leave at this stage');
       }
 
-      delete slot.playerId;
-      delete slot.friend;
+      this.clearSlot(slot);
       this.slotUpdated(slot, sender);
-      setImmediate(() => this.updateState());
       this.emit('player_leave', playerId);
+      setImmediate(() => this.updateState());
       return slot;
     } else {
       return null;
@@ -144,8 +133,7 @@ export class QueueService extends EventEmitter {
         return;
       }
 
-      delete slot.playerId;
-      delete slot.friend;
+      this.clearSlot(slot);
       this.slotUpdated(slot);
       setImmediate(() => this.updateState());
       this.emit('player_leave', playerId);
@@ -264,6 +252,20 @@ export class QueueService extends EventEmitter {
       }
       this.slotUpdated(s);
     });
+  }
+
+  private clearSlot(slot: QueueSlot) {
+    delete slot.playerId;
+    delete slot.friend;
+    slot.playerReady = false;
+  }
+
+  private slotsUpdated(slots: QueueSlot[], sender?: SocketIO.Socket) {
+    if (sender) {
+      sender.broadcast.emit('queue slots update', slots);
+    } else {
+      this.ws.emit('queue slots update', slots);
+    }
   }
 
   private slotUpdated(slot: QueueSlot, sender?: SocketIO.Socket) {

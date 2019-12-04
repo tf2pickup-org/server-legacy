@@ -108,7 +108,9 @@ describe('QueueService', () => {
     });
 
     it('should store the id of the player that joined', async () => {
-      const slot = await service.join(0, player.id);
+      const slots = await service.join(0, player.id);
+      expect(slots.length).toEqual(1);
+      const slot = slots[0];
       expect(slot.playerId).toEqual(player.id);
       expect(slot.playerReady).toBe(false);
       expect(slot.friend).toBeFalsy();
@@ -116,15 +118,18 @@ describe('QueueService', () => {
 
     it('should ready up immediately if the queue is in ready state', async () => {
       service.state = 'ready';
-      const slot = await service.join(0, player.id);
+      const slots = await service.join(0, player.id);
+      expect(slots.length).toEqual(1);
+      const slot = slots[0];
       expect(slot.playerReady).toBe(true);
     });
 
     it('should remove the player from already taken slot', async () => {
-      const oldSlot = await service.join(0, player.id);
-      const newSlot = await service.join(1, player.id);
-      expect(newSlot.playerId).toEqual(player.id);
-      expect(oldSlot.playerId).toBeFalsy();
+      const oldSlots = await service.join(0, player.id);
+      const newSlots = await service.join(1, player.id);
+      expect(newSlots.length).toEqual(2);
+      expect(newSlots.find(s => s.playerId === player.id)).toBeTruthy();
+      expect(oldSlots[0].playerId).toBeFalsy();
     });
 
     it('should emit the event', async () => {
@@ -135,8 +140,8 @@ describe('QueueService', () => {
 
     it('should emit the event over ws', async () => {
       const spy = spyOn(wsProviderServiceStub.ws, 'emit');
-      const slot = await service.join(0, player.id);
-      expect(spy).toHaveBeenCalledWith('queue slot update', slot);
+      const slots = await service.join(0, player.id);
+      expect(spy).toHaveBeenCalledWith('queue slots update', slots);
     });
 
     it('should update queue numbers', async () => {
