@@ -35,6 +35,7 @@ export class MapVoteService {
     @inject(QueueService) private queueService: QueueService,
     @inject(WsProviderService) private wsProvider: WsProviderService,
   ) {
+    this.queueService.on('player_leave', (playerId: string) => this.resetPlayerVote(playerId));
     this.reset();
   }
 
@@ -47,12 +48,20 @@ export class MapVoteService {
       throw new Error('this map is not an option in the vote');
     }
 
+    if (!this.queueService.isInQueue(playerId)) {
+      throw new Error('player not in queue');
+    }
+
     this.votes = [
       ...this.votes.filter(v => v.playerId !== playerId),
       { map, playerId },
     ];
 
     this.wsProvider.ws.emit('map vote results update', this.results);
+  }
+
+  public playerVote(playerId: string): Tf2Map {
+    return this.votes.find(v => v.playerId === playerId)?.map;
   }
 
   /**
@@ -71,6 +80,11 @@ export class MapVoteService {
     this.mapOptions = shuffle(this.queueConfigService.queueConfig.maps.filter(m => m !== this.lastPlayedMap))
       .slice(0, this.mapVoteOptionCount);
     this.votes = [];
+    this.wsProvider.ws.emit('map vote results update', this.results);
+  }
+
+  private resetPlayerVote(playerId: string) {
+    this.votes = [ ...this.votes.filter(v => v.playerId !== playerId) ];
     this.wsProvider.ws.emit('map vote results update', this.results);
   }
 

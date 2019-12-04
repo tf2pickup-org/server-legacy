@@ -133,6 +133,10 @@ export class QueueService extends EventEmitter {
     }
   }
 
+  public isInQueue(playerId: string): boolean {
+    return !!this.slots.find(s => s.playerId === playerId);
+  }
+
   public kick(playerId: string) {
     const slot = this.slots.find(s => s.playerId === playerId);
     if (slot) {
