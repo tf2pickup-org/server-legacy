@@ -31,7 +31,7 @@ const queueConfigServiceStub = {
     teamCount: 2,
     maps: ['fake_map_1', 'fake_map_2'],
     readyUpTimeout: 1000,
-    nextMapSuccessfulVoteThreshold: 2,
+    queueReadyTimeout: 2000,
   },
 };
 
@@ -362,6 +362,41 @@ describe('QueueService', () => {
       expect(service.state).toEqual('waiting');
       expect(service.slots.every(s => !s.playerId)).toBe(true);
 
+      jasmine.clock().uninstall();
+    });
+
+    fit('should kick players that are not ready on time', async () => {
+      jasmine.clock().install();
+      expect(service.state).toEqual('waiting');
+
+      for (let i = 0; i < 12; ++i) {
+        await service.join(i, players[i].id);
+      }
+
+      await wait();
+      expect(service.state).toEqual('ready');
+
+      // ready up exactly 6 players
+      for (let i = 0; i < 12; i += 2) {
+        service.ready(service.slots[i].playerId);
+      }
+
+      jasmine.clock().tick(queueConfigServiceStub.queueConfig.readyUpTimeout + 1);
+      expect(service.readyPlayerCount).toEqual(6);
+
+      // all players that didn't ready up should be kicked
+      for (let i = 1; i < 12; i += 2) {
+        expect(service.slots[i].playerId).toBeUndefined();
+      }
+
+      // the rest should be left intact
+      for (let i = 0; i < 12; i += 2) {
+        expect(service.slots[i].playerId).toBeTruthy();
+        expect(service.slots[i].playerReady).toBe(true);
+      }
+
+      jasmine.clock().tick(queueConfigServiceStub.queueConfig.queueReadyTimeout);
+      expect(service.state).toEqual('waiting');
       jasmine.clock().uninstall();
     });
   });
