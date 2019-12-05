@@ -357,7 +357,7 @@ describe('QueueService', () => {
       await wait();
       expect(service.state).toEqual('ready');
 
-      jasmine.clock().tick(queueConfigServiceStub.queueConfig.readyUpTimeout + 1);
+      jasmine.clock().tick(queueConfigServiceStub.queueConfig.queueReadyTimeout + 1);
 
       expect(service.state).toEqual('waiting');
       expect(service.slots.every(s => !s.playerId)).toBe(true);
@@ -365,7 +365,7 @@ describe('QueueService', () => {
       jasmine.clock().uninstall();
     });
 
-    fit('should kick players that are not ready on time', async () => {
+    it('should kick players that are not ready on time', async () => {
       jasmine.clock().install();
       expect(service.state).toEqual('waiting');
 

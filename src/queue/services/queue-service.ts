@@ -228,31 +228,36 @@ export class QueueService extends EventEmitter {
     if (oldState === 'waiting' && newState === 'ready') {
       this.timer = setTimeout(() => this.readyUpTimeout(), this.queueConfigService.queueConfig.readyUpTimeout);
     } else if (oldState === 'ready' && newState === 'launching') {
-      delete this.timer;
-    } else if (oldState === 'launching' && newState === 'waiting') {
-      delete this.timer;
-    } else if (oldState === 'ready' && newState === 'waiting') {
-      this.cleanupQueue();
+      clearTimeout(this.timer);
     }
   }
 
   private readyUpTimeout() {
-    if (this.readyPlayerCount === this.requiredPlayerCount) {
-      this.setState('launching');
+    if (this.readyPlayerCount < this.requiredPlayerCount) {
+      this.kickUnreadyPlayers();
+    }
+
+    const nextTimeout =
+      this.queueConfigService.queueConfig.queueReadyTimeout - this.queueConfigService.queueConfig.readyUpTimeout;
+
+    if (nextTimeout > 0) {
+      setTimeout(() => this.unreadyQueue(), nextTimeout);
     } else {
-      this.setState('waiting');
+      this.unreadyQueue();
     }
   }
 
-  private cleanupQueue() {
-    this.slots.forEach(slot => {
-      if (!slot.playerReady) {
-        this.clearSlot(slot);
-      } else {
-        slot.playerReady = false;
-      }
-      this.slotsUpdated([ slot ]);
-    });
+  private kickUnreadyPlayers() {
+    const slots = this.slots.filter(s => !s.playerReady);
+    slots.forEach(s => this.clearSlot(s));
+    this.slotsUpdated(slots);
+  }
+
+  private unreadyQueue() {
+    const slots = this.slots.filter(s => s.playerReady);
+    slots.forEach(s => s.playerReady = false);
+    this.slotsUpdated(slots);
+    this.setState('waiting');
   }
 
   private clearSlot(slot: QueueSlot) {
