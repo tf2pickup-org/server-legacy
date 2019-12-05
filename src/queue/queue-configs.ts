@@ -27,6 +27,7 @@ export const queueConfigs: { [name: string]: QueueConfig } = {
       'cp_granary_pro_rc8',
       'cp_gullywash_final1',
       'cp_reckoner_rc2',
+      'cp_prolands_rc2t',
     ],
     execConfigs: ['etf2l_6v6_5cp'],
     nextMapSuccessfulVoteThreshold: 9,
