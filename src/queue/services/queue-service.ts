@@ -82,6 +82,7 @@ export class QueueService extends EventEmitter {
 
     // remove player from any slot(s) he could be occupying
     const oldSlots = this.slots.filter(s => s.playerId === playerId);
+    const oldFriend = oldSlots.find(s => !!s.friend)?.friend;
     oldSlots.forEach(s => this.clearSlot(s));
 
     targetSlot.playerId = playerId;
@@ -89,8 +90,8 @@ export class QueueService extends EventEmitter {
       targetSlot.playerReady = true;
     }
 
-    if (targetSlot.gameClass !== 'medic') {
-      delete targetSlot.friend;
+    if (targetSlot.gameClass === 'medic') {
+      targetSlot.friend = oldFriend;
     }
 
     const slots = [ targetSlot, ...oldSlots ];

@@ -11,7 +11,7 @@ import { QueueService } from './queue-service';
 
 const wsProviderServiceStub = {
   ws: {
-    emit: (...args: any[]) => { },
+    emit: (...args: any[]) => null,
   },
 };
 
@@ -36,7 +36,7 @@ const queueConfigServiceStub = {
 };
 
 const playerBansServiceStub = {
-  on: () => { },
+  on: () => null,
   getActiveBansForPlayer: () => [],
 };
 
@@ -113,7 +113,7 @@ describe('QueueService', () => {
       const slot = slots[0];
       expect(slot.playerId).toEqual(player.id);
       expect(slot.playerReady).toBe(false);
-      expect(slot.friend).toBeFalsy();
+      expect(slot.friend).toBeUndefined();
     });
 
     it('should ready up immediately if the queue is in ready state', async () => {
@@ -129,7 +129,7 @@ describe('QueueService', () => {
       const newSlots = await service.join(1, player.id);
       expect(newSlots.length).toEqual(2);
       expect(newSlots.find(s => s.playerId === player.id)).toBeTruthy();
-      expect(oldSlots[0].playerId).toBeFalsy();
+      expect(oldSlots[0].playerId).toBeUndefined();
     });
 
     it('should emit the event', async () => {
@@ -148,6 +148,28 @@ describe('QueueService', () => {
       expect(service.playerCount).toEqual(0);
       await service.join(0, player.id);
       expect(service.playerCount).toEqual(1);
+    });
+
+    it('should remember friend when changing slots', async () => {
+      const medicSlots = service.slots.filter(s => s.gameClass === 'medic');
+      expect(medicSlots.length).toBe(2);
+
+      let slots = await service.join(medicSlots[0].id, player.id);
+      slots[0].friend = 'FAKE_FRIEND_ID';
+
+      slots = await service.join(medicSlots[1].id, player.id);
+      expect(slots.find(s => s.playerId === player.id).friend).toEqual('FAKE_FRIEND_ID');
+    });
+
+    it('should clear friend when chaning slots to non-medic one', async () => {
+      const medicSlot = service.slots.find(s => s.gameClass === 'medic');
+      const otherSlot = service.slots.find(s => s.gameClass !== 'medic');
+
+      let slots = await service.join(medicSlot.id, player.id);
+      slots[0].friend = 'FAKE_FRIEND_ID';
+
+      slots = await service.join(otherSlot.id, player.id);
+      expect(slots.find(s => s.playerId === player.id).friend).toBeUndefined();
     });
   });
 
