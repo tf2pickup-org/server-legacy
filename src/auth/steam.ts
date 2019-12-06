@@ -39,7 +39,7 @@ export function setupSteamStrategy(config: Config) {
   passport.use(new steam.Strategy({
     returnURL: `${config.url}/auth/steam/return`,
     realm: `${config.url}`,
-    apiKey: config.steam.apiKey,
+    apiKey: `${config.steam.apiKey}`,
   }, async (identifier: any, profile: SteamProfile, done: (error: any, player: Player) => void) => {
     let player = await playerModel.findOne({ steamId: profile.id });
 
