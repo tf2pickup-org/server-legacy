@@ -8,7 +8,7 @@ import { QueueConfigService } from './queue-config-service';
 import { QueueService } from './queue-service';
 
 const gameServiceStub = {
-  create: (queueSlots, queueConfig, map, friends) => null,
+  create: (queueSlots, queueConfig, map) => null,
 };
 
 class QueueServiceStub extends EventEmitter {
@@ -55,7 +55,6 @@ describe('GameLauncherService', () => {
       queueServiceStub.slots,
       queueConfigServiceStub.queueConfig,
       'cp_fake_rc1',
-      [],
     );
 
     await new Promise(resolve => resolve());

@@ -14,6 +14,7 @@ import { QueueConfigService } from '../../queue/services/queue-config-service';
 import { Game, gameModel } from '../models';
 import { cleanupServer } from '../utils/cleanup-server';
 import { configureServer } from '../utils/configure-server';
+import { extractFriends } from '../utils/extract-friends';
 import { pickTeams, PlayerSlot } from '../utils/pick-teams';
 
 @provide(GameService)
@@ -41,8 +42,7 @@ export class GameService {
     return await gameModel.findById(gameId);
   }
 
-  public async create(queueSlots: QueueSlot[], queueConfig: QueueConfig,
-                      map: string, friends: string[][]): Promise<DocumentType<Game>> {
+  public async create(queueSlots: QueueSlot[], queueConfig: QueueConfig, map: string): Promise<DocumentType<Game>> {
     queueSlots.forEach(slot => {
       if (!slot.playerId) {
         throw new Error('cannot create the game with queue not being full');
@@ -55,6 +55,7 @@ export class GameService {
 
     const players: PlayerSlot[] = await Promise.all(queueSlots.map(slot => this.queueSlotToPlayerSlot(slot)));
     const assignedSkills = players.reduce((prev, curr) => { prev[curr.playerId] = curr.skill; return prev; }, { });
+    const friends = extractFriends(queueSlots);
     const slots = pickTeams(players, queueConfig.classes.map(cls => cls.name), { friends });
 
     const game = await gameModel.create({
