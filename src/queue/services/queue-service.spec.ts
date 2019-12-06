@@ -399,5 +399,20 @@ describe('QueueService', () => {
       expect(service.state).toEqual('waiting');
       jasmine.clock().uninstall();
     });
+
+    it('should change waiting->ready->waiting when all players remove from the queue', async () => {
+      for (let i = 0; i < 12; ++i) {
+        await service.join(i, players[i].id);
+      }
+
+      await wait();
+      expect(service.state).toEqual('ready');
+
+      // all 12 players leave
+      players.forEach(p => service.leave(p.id));
+
+      await wait();
+      expect(service.state).toEqual('waiting');
+    });
   });
 });
