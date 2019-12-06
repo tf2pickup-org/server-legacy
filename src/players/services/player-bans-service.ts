@@ -23,7 +23,8 @@ export class PlayerBansService extends EventEmitter {
 
   public async addPlayerBan(playerBan: Partial<PlayerBan>): Promise<DocumentType<PlayerBan>> {
     const addedBan = await playerBanModel.create(playerBan);
-    this.emit('player banned', playerBan.player);
+    const playerId = addedBan.player.toString();
+    this.emit('player_banned', playerId);
     this.onlinePlayersService.getSocketsForPlayer(addedBan.player.toString()).forEach(async socket => {
       const bans = await this.getActiveBansForPlayer(addedBan.player.toString());
       socket.emit('profile update', { bans });

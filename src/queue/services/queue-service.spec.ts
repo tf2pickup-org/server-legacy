@@ -11,7 +11,7 @@ import { QueueService } from './queue-service';
 
 const wsProviderServiceStub = {
   ws: {
-    emit: (...args: any[]) => { },
+    emit: (...args: any[]) => null,
   },
 };
 
@@ -31,12 +31,12 @@ const queueConfigServiceStub = {
     teamCount: 2,
     maps: ['fake_map_1', 'fake_map_2'],
     readyUpTimeout: 1000,
-    nextMapSuccessfulVoteThreshold: 2,
+    queueReadyTimeout: 2000,
   },
 };
 
 const playerBansServiceStub = {
-  on: () => { },
+  on: () => null,
   getActiveBansForPlayer: () => [],
 };
 
@@ -108,24 +108,28 @@ describe('QueueService', () => {
     });
 
     it('should store the id of the player that joined', async () => {
-      const slot = await service.join(0, player.id);
+      const slots = await service.join(0, player.id);
+      expect(slots.length).toEqual(1);
+      const slot = slots[0];
       expect(slot.playerId).toEqual(player.id);
       expect(slot.playerReady).toBe(false);
-      expect(slot.votesForMapChange).toBe(false);
-      expect(slot.friend).toBeFalsy();
+      expect(slot.friend).toBeUndefined();
     });
 
     it('should ready up immediately if the queue is in ready state', async () => {
       service.state = 'ready';
-      const slot = await service.join(0, player.id);
+      const slots = await service.join(0, player.id);
+      expect(slots.length).toEqual(1);
+      const slot = slots[0];
       expect(slot.playerReady).toBe(true);
     });
 
     it('should remove the player from already taken slot', async () => {
-      const oldSlot = await service.join(0, player.id);
-      const newSlot = await service.join(1, player.id);
-      expect(newSlot.playerId).toEqual(player.id);
-      expect(oldSlot.playerId).toBeFalsy();
+      const oldSlots = await service.join(0, player.id);
+      const newSlots = await service.join(1, player.id);
+      expect(newSlots.length).toEqual(2);
+      expect(newSlots.find(s => s.playerId === player.id)).toBeTruthy();
+      expect(oldSlots[0].playerId).toBeUndefined();
     });
 
     it('should emit the event', async () => {
@@ -136,14 +140,36 @@ describe('QueueService', () => {
 
     it('should emit the event over ws', async () => {
       const spy = spyOn(wsProviderServiceStub.ws, 'emit');
-      const slot = await service.join(0, player.id);
-      expect(spy).toHaveBeenCalledWith('queue slot update', slot);
+      const slots = await service.join(0, player.id);
+      expect(spy).toHaveBeenCalledWith('queue slots update', slots);
     });
 
     it('should update queue numbers', async () => {
       expect(service.playerCount).toEqual(0);
       await service.join(0, player.id);
       expect(service.playerCount).toEqual(1);
+    });
+
+    it('should remember friend when changing slots', async () => {
+      const medicSlots = service.slots.filter(s => s.gameClass === 'medic');
+      expect(medicSlots.length).toBe(2);
+
+      let slots = await service.join(medicSlots[0].id, player.id);
+      slots[0].friend = 'FAKE_FRIEND_ID';
+
+      slots = await service.join(medicSlots[1].id, player.id);
+      expect(slots.find(s => s.playerId === player.id).friend).toEqual('FAKE_FRIEND_ID');
+    });
+
+    it('should clear friend when chaning slots to non-medic one', async () => {
+      const medicSlot = service.slots.find(s => s.gameClass === 'medic');
+      const otherSlot = service.slots.find(s => s.gameClass !== 'medic');
+
+      let slots = await service.join(medicSlot.id, player.id);
+      slots[0].friend = 'FAKE_FRIEND_ID';
+
+      slots = await service.join(otherSlot.id, player.id);
+      expect(slots.find(s => s.playerId === player.id).friend).toBeUndefined();
     });
   });
 
@@ -177,7 +203,7 @@ describe('QueueService', () => {
     it('should emit the ws event', () => {
       const spy = spyOn(wsProviderServiceStub.ws, 'emit');
       const slot = service.leave(player.id);
-      expect(spy).toHaveBeenCalledWith('queue slot update', slot);
+      expect(spy).toHaveBeenCalledWith('queue slots update', [ slot ]);
     });
 
     it('should deny leaving the queue when the player is readied up', () => {
@@ -221,7 +247,7 @@ describe('QueueService', () => {
       const slot = service.ready(player.id);
       expect(slot.playerReady).toBe(true);
       expect(service.readyPlayerCount).toEqual(1);
-      expect(spy).toHaveBeenCalledWith('queue slot update', slot);
+      expect(spy).toHaveBeenCalledWith('queue slots update', [ slot ]);
     });
   });
 
@@ -277,49 +303,116 @@ describe('QueueService', () => {
       const spy = spyOn(wsProviderServiceStub.ws, 'emit');
       const slot = await service.markFriend(medic.id, soldier.id);
       expect(slot.friend).toEqual(soldier.id);
-      expect(spy).toHaveBeenCalledWith('queue slot update', slot);
+      expect(spy).toHaveBeenCalledWith('queue slots update', [ slot ]);
     });
   });
 
-  it('should launch the game with the correct parameters', async () => {
-    const wait = () => new Promise(resolve => setTimeout(resolve, 0));
+  describe('state', () => {
+    const wait = () => new Promise(resolve => setImmediate(resolve));
+    let players: Array<Player & Document>;
 
-    const players = await Promise.all(
-      [...Array(12).keys()]
-        .map(id => playerModel.create({ name: `FAKE_PLAYER_${id}`, steamId: `FAKE_STEAM_ID_${id}` })),
-    );
+    beforeEach(async () => {
+      players = await Promise.all(
+        [...Array(12).keys()]
+          .map(id => playerModel.create({ name: `FAKE_PLAYER_${id}`, steamId: `FAKE_STEAM_ID_${id}` })),
+      );
+    });
 
-    for (let i = 0; i < 12; ++i) {
-      await service.join(i, players[i].id);
-    }
+    afterEach(async () => await playerModel.deleteMany({ }));
 
-    const medic = service.slots.find(s => s.gameClass === 'medic');
-    const solly = service.slots.find(s => s.gameClass === 'soldier');
-    const medic2 = service.slots.find(s => s.gameClass === 'medic' && s.playerId !== medic.playerId);
+    it('should change waiting->ready->launching->waiting', async () => {
+      expect(service.state).toEqual('waiting');
+      const spy = spyOn(service, 'emit');
 
-    service.markFriend(medic.playerId, solly.playerId);
-    medic2.friend = medic.playerId; // should be removed before calling GameService.create()
+      for (let i = 0; i < 12; ++i) {
+        await service.join(i, players[i].id);
+      }
 
-    await wait();
-    expect(service.state).toEqual('ready');
+      await wait();
+      expect(service.state).toEqual('ready');
+      expect(spy).toHaveBeenCalledWith('state_change', 'ready');
 
-    const spy = spyOn(gameServiceStub, 'create').and.returnValue(new Promise(resolve => resolve(null)));
+      for (let i = 0; i < 12; ++i) {
+        service.ready(players[i].id);
+      }
 
-    const slots = new Array(12);
-    for (let i = 0; i < 12; ++i) {
-      slots[i] = { ...await service.ready(players[i].id) };
-    }
-    const map = service.map;
+      await wait();
+      expect(spy).toHaveBeenCalledWith('state_change', 'launching');
+      expect(service.state).toEqual('launching');
 
-    await wait();
-    expect(service.state === 'launching');
-    expect(spy).toHaveBeenCalledWith(
-      slots,
-      queueConfigServiceStub.queueConfig,
-      map,
-      [[medic.playerId, solly.playerId]],
-    );
+      service.reset();
+      expect(service.state).toEqual('waiting');
+      expect(spy).toHaveBeenCalledWith('state_change', 'waiting');
+    });
 
-    await playerModel.deleteMany({ });
+    it('should change waiting->ready->waiting', async () => {
+      jasmine.clock().install();
+
+      expect(service.state).toEqual('waiting');
+
+      for (let i = 0; i < 12; ++i) {
+        await service.join(i, players[i].id);
+      }
+
+      await wait();
+      expect(service.state).toEqual('ready');
+
+      jasmine.clock().tick(queueConfigServiceStub.queueConfig.queueReadyTimeout + 1);
+
+      expect(service.state).toEqual('waiting');
+      expect(service.slots.every(s => !s.playerId)).toBe(true);
+
+      jasmine.clock().uninstall();
+    });
+
+    it('should kick players that are not ready on time', async () => {
+      jasmine.clock().install();
+      expect(service.state).toEqual('waiting');
+
+      for (let i = 0; i < 12; ++i) {
+        await service.join(i, players[i].id);
+      }
+
+      await wait();
+      expect(service.state).toEqual('ready');
+
+      // ready up exactly 6 players
+      for (let i = 0; i < 12; i += 2) {
+        service.ready(service.slots[i].playerId);
+      }
+
+      jasmine.clock().tick(queueConfigServiceStub.queueConfig.readyUpTimeout + 1);
+      expect(service.readyPlayerCount).toEqual(6);
+
+      // all players that didn't ready up should be kicked
+      for (let i = 1; i < 12; i += 2) {
+        expect(service.slots[i].playerId).toBeUndefined();
+      }
+
+      // the rest should be left intact
+      for (let i = 0; i < 12; i += 2) {
+        expect(service.slots[i].playerId).toBeTruthy();
+        expect(service.slots[i].playerReady).toBe(true);
+      }
+
+      jasmine.clock().tick(queueConfigServiceStub.queueConfig.queueReadyTimeout);
+      expect(service.state).toEqual('waiting');
+      jasmine.clock().uninstall();
+    });
+
+    it('should change waiting->ready->waiting when all players remove from the queue', async () => {
+      for (let i = 0; i < 12; ++i) {
+        await service.join(i, players[i].id);
+      }
+
+      await wait();
+      expect(service.state).toEqual('ready');
+
+      // all 12 players leave
+      players.forEach(p => service.leave(p.id));
+
+      await wait();
+      expect(service.state).toEqual('waiting');
+    });
   });
 });
