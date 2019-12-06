@@ -124,6 +124,20 @@ describe('QueueService', () => {
       expect(slot.playerReady).toBe(true);
     });
 
+    it('should ready up immediately if the user is joining as 12th player', async () => {
+      const players = await Promise.all(
+        [...Array(11).keys()]
+          .map(id => playerModel.create({ name: `FAKE_PLAYER_${id}`, steamId: `FAKE_STEAM_ID_${id}` })),
+      );
+
+      for (let i = 0; i < 11; ++i) {
+        await service.join(i, players[i].id);
+      }
+
+      const slots = await service.join(11, player.id);
+      expect(slots[0].playerReady).toBe(true);
+    });
+
     it('should remove the player from already taken slot', async () => {
       const oldSlots = await service.join(0, player.id);
       const newSlots = await service.join(1, player.id);
@@ -332,7 +346,7 @@ describe('QueueService', () => {
       expect(service.state).toEqual('ready');
       expect(spy).toHaveBeenCalledWith('state_change', 'ready');
 
-      for (let i = 0; i < 12; ++i) {
+      for (let i = 0; i < 11; ++i) {
         service.ready(players[i].id);
       }
 
@@ -360,7 +374,7 @@ describe('QueueService', () => {
       jasmine.clock().tick(queueConfigServiceStub.queueConfig.queueReadyTimeout + 1);
 
       expect(service.state).toEqual('waiting');
-      expect(service.slots.every(s => !s.playerId)).toBe(true);
+      expect(service.slots.filter(s => s.id < 11).every(s => !s.playerId)).toBe(true);
 
       jasmine.clock().uninstall();
     });
@@ -377,7 +391,7 @@ describe('QueueService', () => {
       expect(service.state).toEqual('ready');
 
       // ready up exactly 6 players
-      for (let i = 0; i < 12; i += 2) {
+      for (let i = 1; i < 12; i += 2) {
         service.ready(service.slots[i].playerId);
       }
 
@@ -385,12 +399,12 @@ describe('QueueService', () => {
       expect(service.readyPlayerCount).toEqual(6);
 
       // all players that didn't ready up should be kicked
-      for (let i = 1; i < 12; i += 2) {
+      for (let i = 0; i < 12; i += 2) {
         expect(service.slots[i].playerId).toBeUndefined();
       }
 
       // the rest should be left intact
-      for (let i = 0; i < 12; i += 2) {
+      for (let i = 1; i < 12; i += 2) {
         expect(service.slots[i].playerId).toBeTruthy();
         expect(service.slots[i].playerReady).toBe(true);
       }
@@ -409,7 +423,13 @@ describe('QueueService', () => {
       expect(service.state).toEqual('ready');
 
       // all 12 players leave
-      players.forEach(p => service.leave(p.id));
+      players.forEach(p => {
+        try {
+          service.leave(p.id);
+        } catch (e) {
+          service.kick(p.id);
+        }
+      });
 
       await wait();
       expect(service.state).toEqual('waiting');

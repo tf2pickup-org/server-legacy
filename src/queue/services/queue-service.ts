@@ -86,7 +86,7 @@ export class QueueService extends EventEmitter {
     oldSlots.forEach(s => this.clearSlot(s));
 
     targetSlot.playerId = playerId;
-    if (this.state === 'ready') {
+    if (this.state === 'ready' || this.playerCount === this.requiredPlayerCount) {
       targetSlot.playerReady = true;
     }
 
