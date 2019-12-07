@@ -7,7 +7,7 @@ import logger from '../../logger';
 import { Player } from '../../players/models/player';
 import { OnlinePlayerService } from '../../players/services/online-player-service';
 import { Tf2Map } from '../models/tf2-map';
-import { GameLauncherService, MapVoteService, QueueConfigService, QueueService } from '../services';
+import { GameLauncherService, MapVoteService, QueueConfigService, QueueNotificationsService, QueueService } from '../services';
 
 @controller('/queue')
 export class QueueController extends BaseHttpController {
@@ -18,6 +18,7 @@ export class QueueController extends BaseHttpController {
   @inject(OnlinePlayerService) private onlinePlayerService: OnlinePlayerService;
   @inject(MapVoteService) private mapVoteService: MapVoteService;
   @inject(GameLauncherService) private gameLauncherService: GameLauncherService; // don't remove
+  @inject(QueueNotificationsService) private queueNotificationsService: QueueNotificationsService; // don't remove
 
   @httpGet('/')
   public async index() {
