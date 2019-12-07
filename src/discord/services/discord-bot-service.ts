@@ -3,7 +3,7 @@ import { inject } from 'inversify';
 import { provide } from 'inversify-binding-decorators';
 import { Config } from '../../config';
 import logger from '../../logger';
-import { playerModel } from '../../players/models/player';
+import { Player, playerModel } from '../../players/models/player';
 import { PlayerBan } from '../../players/models/player-ban';
 
 @provide(DiscordBotService)
@@ -54,6 +54,22 @@ export class DiscordBotService {
           .addField('Reason', ban.reason)
           .setTimestamp();
 
+        channel.send(embed);
+      }
+    }
+  }
+
+  public async notifyNewPlayer(player: Player) {
+    if (this.enabled) {
+      const channelId = this.config.discord.channels.banNotifications;
+      const channel = this.client.channels.get(channelId) as discord.TextChannel;
+      if (channel) {
+        const embed = new discord.RichEmbed()
+          .setColor('#33dc7f')
+          .setTitle('New player')
+          .addField('Name', player.name)
+          .addField('Profile URL', `${this.config.clientUrl}/player/${player._id}`)
+          .setTimestamp();
         channel.send(embed);
       }
     }

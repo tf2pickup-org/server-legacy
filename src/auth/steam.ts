@@ -2,6 +2,8 @@ import { Etf2lPlayer } from 'etf2l/etf2l-player';
 import passport from 'passport';
 import steam from 'passport-steam';
 import { Config } from '../config';
+import { container } from '../container';
+import { DiscordBotService } from '../discord/services/discord-bot-service';
 import { fetchEtf2lPlayerInfo } from '../etf2l';
 import logger from '../logger';
 import { Player, playerModel } from '../players/models/player';
@@ -31,7 +33,11 @@ async function createUser(steamProfile: SteamProfile, config: Config) {
     hasAcceptedRules: false,
     etf2lProfileId: etf2lProfile ? etf2lProfile.id : null,
   });
-  logger.info(`new user: ${name} (steamId: ${steamProfile.id})`);
+  logger.info(`new player: ${name} (steamId: ${steamProfile.id})`);
+
+  const discordBotService = container.get(DiscordBotService);
+  discordBotService.notifyNewPlayer(player);
+
   return player;
 }
 
