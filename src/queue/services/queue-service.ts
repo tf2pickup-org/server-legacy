@@ -123,18 +123,16 @@ export class QueueService extends EventEmitter {
     }
   }
 
-  public kick(playerId: string) {
-    const slot = this.slots.find(s => s.playerId === playerId);
-    if (slot) {
-      if (this.state === 'launching') {
-        return;
-      }
-
-      this.clearSlot(slot);
-      this.slotsUpdated([ slot ]);
-      this.emit('player_leave', playerId);
-      setImmediate(() => this.updateState());
+  public kick(...playerIds: string[]) {
+    if (this.state === 'launching') {
+      return;
     }
+
+    const slots = this.slots.filter(s => playerIds.includes(s.playerId));
+    slots.forEach(s => this.emit('player_leave', s.playerId));
+    slots.forEach(s => this.clearSlot(s));
+    this.slotsUpdated(slots);
+    setImmediate(() => this.updateState());
   }
 
   public isInQueue(playerId: string): boolean {
@@ -249,8 +247,7 @@ export class QueueService extends EventEmitter {
 
   private kickUnreadyPlayers() {
     const slots = this.slots.filter(s => !s.playerReady);
-    slots.forEach(s => this.clearSlot(s));
-    this.slotsUpdated(slots);
+    this.kick(...slots.map(s => s.playerId));
   }
 
   private unreadyQueue() {
