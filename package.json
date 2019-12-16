@@ -16,7 +16,7 @@
   "author": "Michał Garapich <garrappachc@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "@typegoose/typegoose": "^6.1.5",
+    "@typegoose/typegoose": "6.1.7",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "discord.js": "^11.5.1",
